@@ -1,0 +1,71 @@
+class FamilyMember {
+  final String id;
+  final String name;
+  final String role;
+  final String birthDate;
+  final bool isMale;
+  final List<FamilyMember> children;
+  final List<String> spouses; // List of spouse names
+
+  FamilyMember({
+    required this.id,
+    required this.name,
+    required this.role,
+    required this.birthDate,
+    required this.isMale,
+    this.children = const [],
+    this.spouses = const [],
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'role': role,
+      'birthDate': birthDate,
+      'isMale': isMale,
+      'children': children.map((child) => child.toJson()).toList(),
+      'spouses': spouses,
+    };
+  }
+
+  factory FamilyMember.fromJson(Map<String, dynamic> json) {
+    return FamilyMember(
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      role: json['role'] ?? '',
+      birthDate: json['birthDate'] ?? '',
+      isMale: json['isMale'] ?? true,
+      children:
+          (json['children'] as List<dynamic>?)
+              ?.map((child) => FamilyMember.fromJson(child))
+              .toList() ??
+          [],
+      spouses:
+          (json['spouses'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+    );
+  }
+
+  FamilyMember copyWith({
+    String? id,
+    String? name,
+    String? role,
+    String? birthDate,
+    bool? isMale,
+    List<FamilyMember>? children,
+    List<String>? spouses,
+  }) {
+    return FamilyMember(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      role: role ?? this.role,
+      birthDate: birthDate ?? this.birthDate,
+      isMale: isMale ?? this.isMale,
+      children: children ?? this.children,
+      spouses: spouses ?? this.spouses,
+    );
+  }
+}

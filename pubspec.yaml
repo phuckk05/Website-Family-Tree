@@ -1,0 +1,33 @@
+name: website_gia_pha
+description: "A new Flutter project."
+
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.7.0-323.0.dev
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+  url_strategy: ^0.3.0
+  firebase_core: ^4.2.1
+  cloud_firestore: ^6.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^5.0.0
+  build_runner: ^2.4.15
+  riverpod_generator: ^2.6.5
+
+flutter:
+  assets:
+    - assets/images/
+
+  uses-material-design: true
+
