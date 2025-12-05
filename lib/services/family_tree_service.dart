@@ -14,7 +14,13 @@ class FamilyTreeService {
         return FamilyMember.fromJson(snapshot.data()!);
       } else {
         // Trả về dữ liệu mặc định nếu chưa có
-        return _generateDemoData();
+        return FamilyMember(
+          id: '0',
+          name: 'Unknown',
+          role: 'Unknown',
+          birthDate: 'Unknown',
+          isMale: true,
+        );
       }
     });
   }

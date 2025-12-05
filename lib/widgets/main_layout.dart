@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:website_gia_pha/themes/app_colors.dart';
 import 'package:website_gia_pha/widgets/custom_header.dart';
+import 'package:website_gia_pha/widgets/top_notification.dart';
 
 class MainLayout extends StatelessWidget {
   final Widget child;
@@ -11,13 +12,20 @@ class MainLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: AppColors.ivoryWhite,
-      body: Column(
+      body: Stack(
         children: [
-          const CustomHeader(),
-          Expanded(
-            child: enableScroll ? SingleChildScrollView(child: child) : child,
+          Column(
+            children: [
+              const CustomHeader(),
+              Expanded(
+                child:
+                    enableScroll ? SingleChildScrollView(child: child) : child,
+              ),
+            ],
           ),
+          const TopNotification(),
         ],
       ),
     );

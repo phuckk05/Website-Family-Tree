@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:website_gia_pha/core/router/custom_router.dart';
+import 'package:website_gia_pha/core/size/flatform.dart';
 import 'package:website_gia_pha/pages/index.dart';
 import 'package:website_gia_pha/themes/app_colors.dart';
 
-class CustomHeader extends StatelessWidget {
+class CustomHeader extends ConsumerWidget {
   const CustomHeader({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       color: AppColors.woodBrown,
-      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
+      padding:
+          ref.watch(flatformNotifierProvider) == 1
+              ? const EdgeInsets.symmetric(horizontal: 5, vertical: 10)
+              : const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
       child: Row(
         children: [
           // Logo (Placeholder)
@@ -47,7 +52,7 @@ class CustomHeader extends StatelessWidget {
           ),
           const Spacer(),
           // Menu
-          if (MediaQuery.of(context).size.width > 800) ...[
+          if (ref.watch(flatformNotifierProvider) == 3) ...[
             _buildMenuItem(
               'Trang chủ',
               () => CustomRouter.pushAndRemoveUntil(const HomePage()),
@@ -106,19 +111,25 @@ class CustomHeader extends StatelessWidget {
                   _buildPopupMenuItem('Tài liệu', Icons.description),
                   _buildPopupMenuItem('Sự kiện', Icons.event),
                   _buildPopupMenuItem('Liên hệ', Icons.contact_mail),
+                  _buildPopupMenuItem('Đăng nhập', Icons.login),
                 ];
               },
             ),
           const SizedBox(width: 20),
           // Login Button
-          ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryGold,
-              foregroundColor: AppColors.woodBrown,
-            ),
-            child: const Text('Đăng nhập'),
-          ),
+          ref.watch(flatformNotifierProvider) == 3
+              ? ElevatedButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryGold,
+                  foregroundColor: AppColors.woodBrown,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text('Đăng nhập'),
+              )
+              : SizedBox(),
         ],
       ),
     );
