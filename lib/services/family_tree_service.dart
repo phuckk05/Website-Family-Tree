@@ -14,13 +14,7 @@ class FamilyTreeService {
         return FamilyMember.fromJson(snapshot.data()!);
       } else {
         // Trả về dữ liệu mặc định nếu chưa có
-        return FamilyMember(
-          id: '0',
-          name: 'Unknown',
-          role: 'Unknown',
-          birthDate: 'Unknown',
-          isMale: true,
-        );
+        return _generateDemoData();
       }
     });
   }
@@ -38,17 +32,7 @@ class FamilyTreeService {
       birthDate: '1850 - 1920',
       isMale: true,
       spouses: ['Cụ Bà'],
-      children: [
-        FamilyMember(
-          id: '2',
-          name: 'Nguyễn Văn Cả',
-          role: 'Trưởng Nam (Đời 2)',
-          birthDate: '1880 - 1950',
-          isMale: true,
-          spouses: ['Bà Cả'],
-          children: [],
-        ),
-      ],
+      children: [],
     );
   }
 }

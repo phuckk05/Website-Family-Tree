@@ -4,6 +4,7 @@ import 'package:website_gia_pha/core/size/flatform.dart';
 import 'package:website_gia_pha/models/family_member.dart';
 import 'package:website_gia_pha/providers/family_tree_provider.dart';
 import 'package:website_gia_pha/providers/notification_provider.dart';
+import 'package:website_gia_pha/providers/auth_provider.dart';
 import 'package:website_gia_pha/themes/app_colors.dart';
 import 'package:website_gia_pha/widgets/main_layout.dart';
 
@@ -366,11 +367,11 @@ class _FamilyTreePageState extends ConsumerState<FamilyTreePage>
     );
   }
 
-  Widget _buildTree(FamilyMember member) {
+  Widget _buildTree(FamilyMember member, {int depth = 1}) {
     return Column(
       children: [
         // Node thành viên
-        _buildNodeCard(member),
+        _buildNodeCard(member, depth: depth),
 
         // Vẽ đường nối và con cái
         if (member.children.isNotEmpty) ...[
@@ -383,7 +384,7 @@ class _FamilyTreePageState extends ConsumerState<FamilyTreePage>
                   final index = entry.key;
                   final child = entry.value;
                   final count = member.children.length;
-                  return _buildSubTree(child, index, count);
+                  return _buildSubTree(child, index, count, depth + 1);
                 }).toList(),
           ),
         ],
@@ -391,7 +392,7 @@ class _FamilyTreePageState extends ConsumerState<FamilyTreePage>
     );
   }
 
-  Widget _buildSubTree(FamilyMember member, int index, int count) {
+  Widget _buildSubTree(FamilyMember member, int index, int count, int depth) {
     return IntrinsicWidth(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -400,156 +401,404 @@ class _FamilyTreePageState extends ConsumerState<FamilyTreePage>
             size: const Size(0, 20),
             painter: ConnectorPainter(index: index, count: count),
           ),
-          _buildTree(member),
+          _buildTree(member, depth: depth),
         ],
       ),
     );
   }
 
-  Widget _buildNodeCard(FamilyMember member) {
-    final color =
-        member.isMale ? const Color(0xFF2C3E50) : const Color(0xFF8B1E23);
+  Widget _buildNodeCard(FamilyMember member, {int depth = 1}) {
+    // Màu nền vàng tươi (Yellow 400)
+    final backgroundColor = const Color(0xFFFFEE58);
+    // Màu chữ và viền đỏ đậm
+    final mainColor = const Color(0xFFD50000);
+
+    // Kiểm tra nếu là đời thứ 5 trở đi
+    final isVerticalNode = depth >= 5;
+
+    // Kích thước node
+    final double width = isVerticalNode ? 90.0 : 180.0;
+    final double height = isVerticalNode ? 300.0 : 90.0;
 
     return InkWell(
       key: GlobalObjectKey(member.id), // Key để tìm vị trí
-      onTap: () {
-        // Show details dialog
-      },
+      onTap: () => _showActionMenu(context, member),
       child: Container(
-        width: 220, // Tăng chiều rộng một chút cho khung
-        margin: const EdgeInsets.symmetric(horizontal: 8),
-        // Outer Frame (Khung gỗ bên ngoài)
+        width: width,
+        height: height,
+        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         decoration: BoxDecoration(
-          color: const Color(0xFF5D4037), // Màu gỗ đậm
-          borderRadius: BorderRadius.circular(6),
+          color: backgroundColor,
+          border: Border.all(color: mainColor, width: 2),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 6,
-              offset: const Offset(3, 3),
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 2,
+              offset: const Offset(1, 1),
             ),
           ],
-          border: Border.all(color: const Color(0xFF3E2723), width: 1),
         ),
-        padding: const EdgeInsets.all(6), // Độ dày của khung gỗ
-        child: Container(
-          // Inner Paper (Giấy bên trong)
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-          decoration: BoxDecoration(
-            color: const Color(0xFFFDF5E6), // Màu giấy cũ (OldLace)
-            borderRadius: BorderRadius.circular(2),
-            border: Border.all(
-              color: const Color(0xFF8D6E63), // Viền mỏng bên trong
-              width: 1,
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Tên thành viên
-              Text(
-                member.name.toUpperCase(),
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: AppColors.woodBrown,
-                  fontFamily: 'Serif', // Font có chân
-                  letterSpacing: 0.5,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              // Tên vợ/chồng (nếu có)
-              if (member.spouses.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Container(
-                  height: 1,
-                  width: 100,
-                  color: AppColors.woodBrown.withOpacity(0.3),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '(${member.spouses.join(', ')})',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textDark,
-                    fontStyle: FontStyle.italic,
-                    fontFamily: 'Serif',
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-              const SizedBox(height: 6),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    member.role,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: color,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Serif',
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+        child:
+            isVerticalNode
+                ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Tên vợ/chồng (Xoay dọc) - Hiển thị bên trái (Dưới theo quy tắc phải sang trái)
+                        if (member.spouses.isNotEmpty) ...[
+                          RotatedBox(
+                            quarterTurns: 1,
+                            child: Container(
+                              constraints: const BoxConstraints(maxWidth: 200),
+                              child: Text(
+                                member.spouses.join(', '),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: mainColor,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+
+                        // Tên thành viên (Xoay dọc 90 độ) - Hiển thị bên phải (Trên)
+                        RotatedBox(
+                          quarterTurns: 1,
+                          child: Container(
+                            constraints: const BoxConstraints(
+                              maxWidth: 200,
+                            ), // Giới hạn chiều dài text
+                            child: Text(
+                              member.name.toUpperCase(),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: mainColor,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    member.birthDate,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey[700],
-                      fontFamily: 'Serif',
+                  ],
+                )
+                : Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Tên thành viên
+                    Text(
+                      member.name.toUpperCase(),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: mainColor,
+                        height: 1.1,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              // Action Buttons
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildActionButton(
-                    icon: Icons.person_add,
-                    tooltip: 'Thêm con',
-                    onTap: () => _showAddChildDialog(member),
-                  ),
-                  const SizedBox(width: 16),
-                  _buildActionButton(
-                    icon: Icons.favorite,
-                    tooltip: 'Thêm vợ/chồng',
-                    onTap: () => _showAddSpouseDialog(member),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
+
+                    // Tên vợ/chồng (nếu có)
+                    if (member.spouses.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        member.spouses.join('\n'),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: mainColor,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
       ),
     );
   }
 
-  Widget _buildActionButton({
-    required IconData icon,
-    required String tooltip,
-    required VoidCallback onTap,
-  }) {
-    return Tooltip(
-      message: tooltip,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(50),
-            border: Border.all(color: AppColors.woodBrown.withOpacity(0.5)),
+  void _showActionMenu(BuildContext context, FamilyMember member) {
+    final isLoggedIn = ref.read(authProvider).value ?? false;
+
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        if (!isLoggedIn) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.visibility),
+                title: const Text('Xem chi tiết'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showViewDialog(member);
+                },
+              ),
+            ],
+          );
+        }
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.person_add),
+              title: const Text('Thêm con'),
+              onTap: () {
+                Navigator.pop(context);
+                _showAddChildDialog(member);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.favorite),
+              title: const Text('Thêm vợ/chồng'),
+              onTap: () {
+                Navigator.pop(context);
+                _showAddSpouseDialog(member);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('Sửa thông tin'),
+              onTap: () {
+                Navigator.pop(context);
+                _showEditDialog(member);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.red),
+              title: const Text(
+                'Xóa thành viên',
+                style: TextStyle(color: Colors.red),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _confirmDelete(member);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showViewDialog(FamilyMember member) {
+    final nameController = TextEditingController(text: member.name);
+    final roleController = TextEditingController(text: member.role);
+    final birthDateController = TextEditingController(text: member.birthDate);
+    final orderController = TextEditingController(
+      text: member.order.toString(),
+    );
+    final spousesController = TextEditingController(
+      text: member.spouses.join(', '),
+    );
+    bool isMale = member.isMale;
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Thông tin chi tiết'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameController,
+                    readOnly: true,
+                    decoration: const InputDecoration(labelText: 'Họ và tên'),
+                  ),
+                  TextField(
+                    controller: roleController,
+                    readOnly: true,
+                    decoration: const InputDecoration(labelText: 'Vai trò'),
+                  ),
+                  TextField(
+                    controller: birthDateController,
+                    readOnly: true,
+                    decoration: const InputDecoration(labelText: 'Năm sinh'),
+                  ),
+                  TextField(
+                    controller: orderController,
+                    readOnly: true,
+                    decoration: const InputDecoration(labelText: 'Thứ tự'),
+                  ),
+                  TextField(
+                    controller: spousesController,
+                    readOnly: true,
+                    decoration: const InputDecoration(labelText: 'Vợ/Chồng'),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Text('Giới tính: '),
+                      Text(
+                        isMale ? 'Nam' : 'Nữ',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Đóng'),
+              ),
+            ],
           ),
-          child: Icon(icon, size: 14, color: AppColors.woodBrown),
-        ),
-      ),
+    );
+  }
+
+  void _showEditDialog(FamilyMember member) {
+    final nameController = TextEditingController(text: member.name);
+    final roleController = TextEditingController(text: member.role);
+    final birthDateController = TextEditingController(text: member.birthDate);
+    final orderController = TextEditingController(
+      text: member.order.toString(),
+    );
+    final spousesController = TextEditingController(
+      text: member.spouses.join(', '),
+    );
+    bool isMale = member.isMale;
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => StatefulBuilder(
+            builder: (context, setState) {
+              return AlertDialog(
+                title: const Text('Sửa thông tin'),
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextField(
+                        controller: nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Họ và tên',
+                        ),
+                      ),
+                      TextField(
+                        controller: roleController,
+                        decoration: const InputDecoration(labelText: 'Vai trò'),
+                      ),
+                      TextField(
+                        controller: birthDateController,
+                        decoration: const InputDecoration(
+                          labelText: 'Năm sinh',
+                        ),
+                      ),
+                      TextField(
+                        controller: orderController,
+                        decoration: const InputDecoration(
+                          labelText: 'Thứ tự (1, 2, 3...)',
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                      TextField(
+                        controller: spousesController,
+                        decoration: const InputDecoration(
+                          labelText: 'Vợ/Chồng (ngăn cách bởi dấu phẩy)',
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          const Text('Giới tính: '),
+                          Radio<bool>(
+                            value: true,
+                            groupValue: isMale,
+                            onChanged: (val) => setState(() => isMale = val!),
+                          ),
+                          const Text('Nam'),
+                          Radio<bool>(
+                            value: false,
+                            groupValue: isMale,
+                            onChanged: (val) => setState(() => isMale = val!),
+                          ),
+                          const Text('Nữ'),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Hủy'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      final spouses =
+                          spousesController.text
+                              .split(',')
+                              .map((e) => e.trim())
+                              .where((e) => e.isNotEmpty)
+                              .toList();
+
+                      final updatedMember = member.copyWith(
+                        name: nameController.text,
+                        role: roleController.text,
+                        birthDate: birthDateController.text,
+                        isMale: isMale,
+                        order: int.tryParse(orderController.text) ?? 1,
+                        spouses: spouses,
+                      );
+
+                      ref
+                          .read(familyTreeProvider.notifier)
+                          .updateMember(updatedMember);
+                      Navigator.pop(context);
+                    },
+                    child: const Text('Lưu'),
+                  ),
+                ],
+              );
+            },
+          ),
+    );
+  }
+
+  void _confirmDelete(FamilyMember member) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Xác nhận xóa'),
+            content: Text(
+              'Bạn có chắc muốn xóa ${member.name}? Hành động này sẽ xóa cả các đời sau của người này.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Hủy'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: () {
+                  ref.read(familyTreeProvider.notifier).deleteMember(member.id);
+                  Navigator.pop(context);
+                },
+                child: const Text('Xóa'),
+              ),
+            ],
+          ),
     );
   }
 
@@ -557,6 +806,9 @@ class _FamilyTreePageState extends ConsumerState<FamilyTreePage>
     final nameController = TextEditingController();
     final roleController = TextEditingController();
     final birthDateController = TextEditingController();
+    final orderController = TextEditingController(
+      text: (parent.children.length + 1).toString(),
+    );
     bool isMale = true;
 
     showDialog(
@@ -584,6 +836,13 @@ class _FamilyTreePageState extends ConsumerState<FamilyTreePage>
                       decoration: const InputDecoration(
                         labelText: 'Năm sinh (VD: 1990)',
                       ),
+                    ),
+                    TextField(
+                      controller: orderController,
+                      decoration: const InputDecoration(
+                        labelText: 'Thứ tự (1, 2, 3...)',
+                      ),
+                      keyboardType: TextInputType.number,
                     ),
                     Row(
                       children: [
@@ -618,6 +877,7 @@ class _FamilyTreePageState extends ConsumerState<FamilyTreePage>
                           role: roleController.text,
                           birthDate: birthDateController.text,
                           isMale: isMale,
+                          order: int.tryParse(orderController.text) ?? 1,
                         );
                         ref
                             .read(familyTreeProvider.notifier)
@@ -674,7 +934,7 @@ class VerticalLinePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint =
         Paint()
-          ..color = AppColors.woodBrown
+          ..color = const Color(0xFFD50000) // Red
           ..strokeWidth = 2.0
           ..style = PaintingStyle.stroke;
 
@@ -700,7 +960,7 @@ class ConnectorPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint =
         Paint()
-          ..color = AppColors.woodBrown
+          ..color = const Color(0xFFD50000) // Red
           ..strokeWidth = 2.0
           ..style = PaintingStyle.stroke;
 
@@ -713,19 +973,15 @@ class ConnectorPainter extends CustomPainter {
       path.moveTo(centerX, 0);
       path.lineTo(centerX, bottomY);
     } else {
-      const double radius = 10.0;
-
       if (index == 0) {
-        // Con đầu: vẽ từ phải sang, bo góc xuống dưới
+        // Con đầu: vẽ từ phải sang, vuông góc xuống
         path.moveTo(size.width, 0);
-        path.lineTo(centerX + radius, 0);
-        path.quadraticBezierTo(centerX, 0, centerX, radius);
+        path.lineTo(centerX, 0);
         path.lineTo(centerX, bottomY);
       } else if (index == count - 1) {
-        // Con cuối: vẽ từ trái sang, bo góc xuống dưới
+        // Con cuối: vẽ từ trái sang, vuông góc xuống
         path.moveTo(0, 0);
-        path.lineTo(centerX - radius, 0);
-        path.quadraticBezierTo(centerX, 0, centerX, radius);
+        path.lineTo(centerX, 0);
         path.lineTo(centerX, bottomY);
       } else {
         // Con giữa: vẽ đường ngang qua và đường dọc xuống

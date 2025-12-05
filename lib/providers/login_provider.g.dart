@@ -1,27 +1,27 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'family_tree_provider.dart';
+part of 'login_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$familyTreeHash() => r'134c2a5dfb508f38cdfb945a009a13b45b0f2079';
+String _$loginControllerHash() => r'a1b6b06b86245d1d1576886332de09ea8eb16778';
 
-/// See also [FamilyTree].
-@ProviderFor(FamilyTree)
-final familyTreeProvider =
-    AutoDisposeStreamNotifierProvider<FamilyTree, FamilyMember>.internal(
-      FamilyTree.new,
-      name: r'familyTreeProvider',
+/// See also [LoginController].
+@ProviderFor(LoginController)
+final loginControllerProvider =
+    AutoDisposeAsyncNotifierProvider<LoginController, void>.internal(
+      LoginController.new,
+      name: r'loginControllerProvider',
       debugGetCreateSourceHash:
           const bool.fromEnvironment('dart.vm.product')
               ? null
-              : _$familyTreeHash,
+              : _$loginControllerHash,
       dependencies: null,
       allTransitiveDependencies: null,
     );
 
-typedef _$FamilyTree = AutoDisposeStreamNotifier<FamilyMember>;
+typedef _$LoginController = AutoDisposeAsyncNotifier<void>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

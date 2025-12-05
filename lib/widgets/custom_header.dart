@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:website_gia_pha/core/router/custom_router.dart';
 import 'package:website_gia_pha/core/size/flatform.dart';
 import 'package:website_gia_pha/pages/index.dart';
+import 'package:website_gia_pha/pages/login_page.dart';
+import 'package:website_gia_pha/providers/auth_provider.dart';
+import 'package:website_gia_pha/providers/notification_provider.dart';
 import 'package:website_gia_pha/themes/app_colors.dart';
 
 class CustomHeader extends ConsumerWidget {
@@ -77,8 +80,15 @@ class CustomHeader extends ConsumerWidget {
               'Liên hệ',
               () => CustomRouter.push(const ContactPage()),
             ),
-          ] else
-            PopupMenuButton<String>(
+            const SizedBox(width: 10),
+            _buildLoginButton(context, ref),
+          ],
+          Visibility(
+            visible: ref.watch(flatformNotifierProvider) != 3,
+            maintainState: true,
+            maintainAnimation: true,
+            maintainSize: false,
+            child: PopupMenuButton<String>(
               icon: const Icon(Icons.menu, color: AppColors.primaryGold),
               color: AppColors.ivoryWhite,
               onSelected: (value) {
@@ -101,9 +111,24 @@ class CustomHeader extends ConsumerWidget {
                   case 'Liên hệ':
                     CustomRouter.push(const ContactPage());
                     break;
+                  case 'Đăng nhập':
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const LoginPage(),
+                      ),
+                    );
+                    break;
+                  case 'Đăng xuất':
+                    ref.read(authProvider.notifier).logout();
+                    ref
+                        .read(notificationProvider.notifier)
+                        .show('Đã đăng xuất', type: NotificationType.info);
+                    break;
                 }
               },
               itemBuilder: (BuildContext context) {
+                final isLoggedIn = ref.watch(authProvider).value ?? false;
                 return [
                   _buildPopupMenuItem('Trang chủ', Icons.home),
                   _buildPopupMenuItem('Gia phả', Icons.account_tree),
@@ -111,25 +136,35 @@ class CustomHeader extends ConsumerWidget {
                   _buildPopupMenuItem('Tài liệu', Icons.description),
                   _buildPopupMenuItem('Sự kiện', Icons.event),
                   _buildPopupMenuItem('Liên hệ', Icons.contact_mail),
-                  _buildPopupMenuItem('Đăng nhập', Icons.login),
+                  _buildPopupMenuItem(
+                    isLoggedIn ? 'Đăng xuất' : 'Đăng nhập',
+                    isLoggedIn ? Icons.logout : Icons.login,
+                  ),
                 ];
               },
             ),
-          const SizedBox(width: 20),
-          // Login Button
-          ref.watch(flatformNotifierProvider) == 3
-              ? ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryGold,
-                  foregroundColor: AppColors.woodBrown,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text('Đăng nhập'),
-              )
-              : SizedBox(),
+          ),
+          // // Login Button
+          // ref.watch(flatformNotifierProvider) == 3
+          //     ? Row(
+          //       children: [
+          //         const SizedBox(width: 20),
+          //         ElevatedButton(
+          //           onPressed: () {
+          //             CustomRouter.push(const LoginPage());
+          //           },
+          //           style: ElevatedButton.styleFrom(
+          //             backgroundColor: AppColors.primaryGold,
+          //             foregroundColor: AppColors.woodBrown,
+          //             shape: RoundedRectangleBorder(
+          //               borderRadius: BorderRadius.circular(8),
+          //             ),
+          //           ),
+          //           child: const Text('Đăng nhập'),
+          //         ),
+          //       ],
+          //     )
+          //     : SizedBox(),
         ],
       ),
     );
@@ -164,6 +199,48 @@ class CustomHeader extends ConsumerWidget {
           style: const TextStyle(color: AppColors.ivoryWhite, fontSize: 16),
         ),
       ),
+    );
+  }
+
+  Widget _buildLoginButton(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authProvider);
+    return authState.when(
+      data:
+          (isLoggedIn) => ElevatedButton.icon(
+            onPressed: () {
+              if (isLoggedIn) {
+                ref.read(authProvider.notifier).logout();
+                ref
+                    .read(notificationProvider.notifier)
+                    .show('Đã đăng xuất', type: NotificationType.info);
+              } else {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isLoggedIn ? Colors.red : AppColors.primaryGold,
+              foregroundColor: isLoggedIn ? Colors.white : AppColors.woodBrown,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            ),
+            icon: Icon(isLoggedIn ? Icons.logout : Icons.login, size: 16),
+            label: Text(isLoggedIn ? 'Đăng xuất' : 'Đăng nhập'),
+          ),
+      loading:
+          () => const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AppColors.primaryGold,
+            ),
+          ),
+      error: (_, __) => const Icon(Icons.error, color: Colors.red),
     );
   }
 }
