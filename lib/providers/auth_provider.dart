@@ -11,23 +11,37 @@ class Auth extends _$Auth {
 
   @override
   Future<bool> build() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_isLoggedInKey) ?? false;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(_isLoggedInKey) ?? false;
+    } catch (e) {
+      print('Lỗi SharedPreferences (Web): $e');
+      return false;
+    }
   }
 
   Future<bool> login(String username, String password) async {
-    final success = await _authService.login(username, password);
-    if (success) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_isLoggedInKey, true);
-      state = const AsyncData(true);
+    try {
+      final success = await _authService.login(username, password);
+      if (success) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool(_isLoggedInKey, true);
+        state = const AsyncData(true);
+      }
+      return success;
+    } catch (e) {
+      print('Lỗi Login Action: $e');
+      return false;
     }
-    return success;
   }
 
   Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_isLoggedInKey);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_isLoggedInKey);
+    } catch (e) {
+      print('Lỗi Logout Action: $e');
+    }
     state = const AsyncData(false);
   }
 }
