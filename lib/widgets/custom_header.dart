@@ -17,7 +17,7 @@ class CustomHeader extends ConsumerWidget {
       color: AppColors.woodBrown,
       padding:
           ref.watch(flatformNotifierProvider) == 1
-              ? const EdgeInsets.symmetric(horizontal: 5, vertical: 10)
+              ? const EdgeInsets.symmetric(horizontal: 5, vertical: 5)
               : const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
       child: Row(
         children: [
@@ -68,14 +68,14 @@ class CustomHeader extends ConsumerWidget {
               'Hình ảnh',
               () => CustomRouter.push(const GalleryPage()),
             ),
-            _buildMenuItem(
-              'Tài liệu',
-              () => CustomRouter.push(const DocumentsPage()),
-            ),
-            _buildMenuItem(
-              'Sự kiện',
-              () => CustomRouter.push(const EventsPage()),
-            ),
+            // _buildMenuItem(
+            //   'Tài liệu',
+            //   () => CustomRouter.push(const DocumentsPage()),
+            // ),
+            // _buildMenuItem(
+            //   'Sự kiện',
+            //   () => CustomRouter.push(const EventsPage()),
+            // ),
             _buildMenuItem(
               'Liên hệ',
               () => CustomRouter.push(const ContactPage()),
@@ -102,12 +102,12 @@ class CustomHeader extends ConsumerWidget {
                   case 'Hình ảnh':
                     CustomRouter.push(const GalleryPage());
                     break;
-                  case 'Tài liệu':
-                    CustomRouter.push(const DocumentsPage());
-                    break;
-                  case 'Sự kiện':
-                    CustomRouter.push(const EventsPage());
-                    break;
+                  // case 'Tài liệu':
+                  //   CustomRouter.push(const DocumentsPage());
+                  //   break;
+                  // case 'Sự kiện':
+                  //   CustomRouter.push(const EventsPage());
+                  //   break;
                   case 'Liên hệ':
                     CustomRouter.push(const ContactPage());
                     break;
@@ -133,8 +133,8 @@ class CustomHeader extends ConsumerWidget {
                   _buildPopupMenuItem('Trang chủ', Icons.home),
                   _buildPopupMenuItem('Gia phả', Icons.account_tree),
                   _buildPopupMenuItem('Hình ảnh', Icons.photo_library),
-                  _buildPopupMenuItem('Tài liệu', Icons.description),
-                  _buildPopupMenuItem('Sự kiện', Icons.event),
+                  // _buildPopupMenuItem('Tài liệu', Icons.description),
+                  // _buildPopupMenuItem('Sự kiện', Icons.event),
                   _buildPopupMenuItem('Liên hệ', Icons.contact_mail),
                   _buildPopupMenuItem(
                     isLoggedIn ? 'Đăng xuất' : 'Đăng nhập',
