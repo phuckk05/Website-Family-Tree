@@ -8,6 +8,7 @@ class EventsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MainLayout(
+      index: 4,
       child: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(

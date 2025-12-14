@@ -8,239 +8,391 @@ import 'package:website_gia_pha/providers/auth_provider.dart';
 import 'package:website_gia_pha/providers/notification_provider.dart';
 import 'package:website_gia_pha/themes/app_colors.dart';
 
-class CustomHeader extends ConsumerWidget {
+/// Header với phong cách vintage 1990s Vietnamese
+///
+/// Hiển thị logo, tiêu đề họ, menu điều hướng và nút đăng nhập
+/// với thiết kế ấm áp, nostalgic như những tấm biển gỗ cũ
+class CustomHeader extends ConsumerStatefulWidget {
   const CustomHeader({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CustomHeader> createState() => _CustomHeaderState();
+}
+
+class _CustomHeaderState extends ConsumerState<CustomHeader> {
+  String? _hoveredItem;
+
+  @override
+  Widget build(BuildContext context) {
+    final isMobile = ref.watch(flatformNotifierProvider) != 3;
+
     return Container(
-      color: AppColors.woodBrown,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [AppColors.woodBrown, AppColors.woodBrown.withOpacity(0.95)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.softShadow,
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.primaryGold.withOpacity(0.3),
+            width: 2,
+          ),
+        ),
+      ),
       padding:
-          ref.watch(flatformNotifierProvider) == 1
+          isMobile
               ? const EdgeInsets.symmetric(horizontal: 5, vertical: 5)
-              : const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+              : const EdgeInsets.symmetric(horizontal: 36, vertical: 15),
       child: Row(
         children: [
-          // Logo (Placeholder)
-          InkWell(
-            onTap: () => CustomRouter.pushAndRemoveUntil(const HomePage()),
-            child: const Icon(
-              Icons.account_balance,
-              color: AppColors.primaryGold,
-              size: 40,
-            ),
-          ),
-          const SizedBox(width: 10),
-          // Title
-          InkWell(
-            onTap: () => CustomRouter.pushAndRemoveUntil(const HomePage()),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'HỌ NGUYỄN ĐÌNH',
-                  style: TextStyle(
-                    color: AppColors.primaryGold,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                    fontFamily: 'Serif', // Placeholder for calligraphy font
-                  ),
-                ),
-                Text(
-                  'CHI 5',
-                  style: TextStyle(color: Colors.white, fontSize: 14),
-                ),
-              ],
-            ),
-          ),
+          _buildLogo(),
+          const SizedBox(width: 16),
+          _buildTitle(),
           const Spacer(),
-          // Menu
-          if (ref.watch(flatformNotifierProvider) == 3) ...[
-            _buildMenuItem(
-              'Trang chủ',
-              () => CustomRouter.pushAndRemoveUntil(const HomePage()),
-            ),
-            _buildMenuItem(
-              'Gia phả',
-              () => CustomRouter.push(const FamilyTreePage()),
-            ),
-            _buildMenuItem(
-              'Hình ảnh',
-              () => CustomRouter.push(const GalleryPage()),
-            ),
-            // _buildMenuItem(
-            //   'Tài liệu',
-            //   () => CustomRouter.push(const DocumentsPage()),
-            // ),
-            // _buildMenuItem(
-            //   'Sự kiện',
-            //   () => CustomRouter.push(const EventsPage()),
-            // ),
-            _buildMenuItem(
-              'Liên hệ',
-              () => CustomRouter.push(const ContactPage()),
-            ),
-            const SizedBox(width: 10),
-            _buildLoginButton(context, ref),
-          ],
-          Visibility(
-            visible: ref.watch(flatformNotifierProvider) != 3,
-            maintainState: true,
-            maintainAnimation: true,
-            maintainSize: false,
-            child: PopupMenuButton<String>(
-              icon: const Icon(Icons.menu, color: AppColors.primaryGold),
-              color: AppColors.ivoryWhite,
-              onSelected: (value) {
-                switch (value) {
-                  case 'Trang chủ':
-                    CustomRouter.pushAndRemoveUntil(const HomePage());
-                    break;
-                  case 'Gia phả':
-                    CustomRouter.push(const FamilyTreePage());
-                    break;
-                  case 'Hình ảnh':
-                    CustomRouter.push(const GalleryPage());
-                    break;
-                  // case 'Tài liệu':
-                  //   CustomRouter.push(const DocumentsPage());
-                  //   break;
-                  // case 'Sự kiện':
-                  //   CustomRouter.push(const EventsPage());
-                  //   break;
-                  case 'Liên hệ':
-                    CustomRouter.push(const ContactPage());
-                    break;
-                  case 'Đăng nhập':
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const LoginPage(),
-                      ),
-                    );
-                    break;
-                  case 'Đăng xuất':
-                    ref.read(authProvider.notifier).logout();
-                    ref
-                        .read(notificationProvider.notifier)
-                        .show('Đã đăng xuất', type: NotificationType.info);
-                    break;
-                }
-              },
-              itemBuilder: (BuildContext context) {
-                final isLoggedIn = ref.watch(authProvider).value ?? false;
-                return [
-                  _buildPopupMenuItem('Trang chủ', Icons.home),
-                  _buildPopupMenuItem('Gia phả', Icons.account_tree),
-                  _buildPopupMenuItem('Hình ảnh', Icons.photo_library),
-                  // _buildPopupMenuItem('Tài liệu', Icons.description),
-                  // _buildPopupMenuItem('Sự kiện', Icons.event),
-                  _buildPopupMenuItem('Liên hệ', Icons.contact_mail),
-                  _buildPopupMenuItem(
-                    isLoggedIn ? 'Đăng xuất' : 'Đăng nhập',
-                    isLoggedIn ? Icons.logout : Icons.login,
-                  ),
-                ];
-              },
-            ),
-          ),
-          // // Login Button
-          // ref.watch(flatformNotifierProvider) == 3
-          //     ? Row(
-          //       children: [
-          //         const SizedBox(width: 20),
-          //         ElevatedButton(
-          //           onPressed: () {
-          //             CustomRouter.push(const LoginPage());
-          //           },
-          //           style: ElevatedButton.styleFrom(
-          //             backgroundColor: AppColors.primaryGold,
-          //             foregroundColor: AppColors.woodBrown,
-          //             shape: RoundedRectangleBorder(
-          //               borderRadius: BorderRadius.circular(8),
-          //             ),
-          //           ),
-          //           child: const Text('Đăng nhập'),
-          //         ),
-          //       ],
-          //     )
-          //     : SizedBox(),
+          if (!isMobile) ..._buildDesktopMenu(),
+          if (isMobile) _buildMobileMenu(),
         ],
       ),
     );
   }
 
-  PopupMenuItem<String> _buildPopupMenuItem(String title, IconData icon) {
-    return PopupMenuItem<String>(
-      value: title,
-      child: Row(
-        children: [
-          Icon(icon, color: AppColors.woodBrown, size: 20),
-          const SizedBox(width: 10),
-          Text(
-            title,
-            style: const TextStyle(
-              color: AppColors.woodBrown,
-              fontWeight: FontWeight.w500,
-            ),
+  /// Xây dựng logo chùa với hiệu ứng vintage
+  Widget _buildLogo() {
+    return InkWell(
+      onTap: () => CustomRouter.pushAndRemoveUntil(const HomePage()),
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: AppColors.primaryGold.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: AppColors.primaryGold.withOpacity(0.4),
+            width: 2,
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMenuItem(String title, VoidCallback onTap) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 15),
-      child: TextButton(
-        onPressed: onTap,
-        child: Text(
-          title,
-          style: const TextStyle(color: AppColors.ivoryWhite, fontSize: 16),
+        ),
+        child: const Icon(
+          Icons.temple_buddhist,
+          color: AppColors.primaryGold,
+          size: 36,
         ),
       ),
     );
   }
 
-  Widget _buildLoginButton(BuildContext context, WidgetRef ref) {
+  /// Xây dựng tiêu đề họ với typography vintage
+  Widget _buildTitle() {
+    return InkWell(
+      onTap: () => CustomRouter.pushAndRemoveUntil(const HomePage()),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'HỌ NGUYỄN ĐÌNH',
+            style: TextStyle(
+              color: AppColors.primaryGold,
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+              letterSpacing: 2,
+              fontFamily: 'Serif',
+              shadows: [
+                Shadow(
+                  color: Colors.black.withOpacity(0.3),
+                  offset: const Offset(1, 1),
+                  blurRadius: 2,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 2),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppColors.primaryGold.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: const Text(
+              'CHI 5',
+              style: TextStyle(
+                color: AppColors.creamPaper,
+                fontSize: 12,
+                letterSpacing: 1.5,
+                fontFamily: 'Serif',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Xây dựng menu desktop với hiệu ứng hover
+  List<Widget> _buildDesktopMenu() {
+    return [
+      _buildMenuItem('Trang chủ', Icons.home, () {
+        CustomRouter.pushAndRemoveUntil(const HomePage());
+      }),
+      _buildMenuItem('Gia phả', Icons.account_tree, () {
+        CustomRouter.push(const FamilyTreePage());
+      }),
+      _buildMenuItem('Hình ảnh', Icons.photo_library, () {
+        CustomRouter.push(const GalleryPage());
+      }),
+      _buildMenuItem('Liên hệ', Icons.contact_mail, () {
+        CustomRouter.push(const ContactPage());
+      }),
+      const SizedBox(width: 16),
+      _buildLoginButton(),
+    ];
+  }
+
+  /// Xây dựng item menu với hover effect
+  Widget _buildMenuItem(String title, IconData icon, VoidCallback onTap) {
+    final isHovered = _hoveredItem == title;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hoveredItem = title),
+      onExit: (_) => setState(() => _hoveredItem = null),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            color:
+                isHovered
+                    ? AppColors.primaryGold.withOpacity(0.15)
+                    : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color:
+                  isHovered
+                      ? AppColors.primaryGold.withOpacity(0.5)
+                      : Colors.transparent,
+              width: 1.5,
+            ),
+          ),
+          child: TextButton.icon(
+            onPressed: onTap,
+            icon: Icon(
+              icon,
+              color: isHovered ? AppColors.primaryGold : AppColors.creamPaper,
+              size: 18,
+            ),
+            label: Text(
+              title,
+              style: TextStyle(
+                color: isHovered ? AppColors.primaryGold : AppColors.creamPaper,
+                fontSize: 15,
+                fontFamily: 'Serif',
+                letterSpacing: 0.5,
+                fontWeight: isHovered ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Xây dựng nút đăng nhập/đăng xuất
+  Widget _buildLoginButton() {
     final authState = ref.watch(authProvider);
     return authState.when(
-      data:
-          (isLoggedIn) => ElevatedButton.icon(
-            onPressed: () {
-              if (isLoggedIn) {
-                ref.read(authProvider.notifier).logout();
-                ref
-                    .read(notificationProvider.notifier)
-                    .show('Đã đăng xuất', type: NotificationType.info);
-              } else {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isLoggedIn ? Colors.red : AppColors.primaryGold,
-              foregroundColor: isLoggedIn ? Colors.white : AppColors.woodBrown,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+      data: (isLoggedIn) {
+        return MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            child: ElevatedButton.icon(
+              onPressed: () {
+                if (isLoggedIn) {
+                  ref.read(authProvider.notifier).logout();
+                  ref
+                      .read(notificationProvider.notifier)
+                      .show('Đã đăng xuất', type: NotificationType.info);
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const LoginPage()),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                    isLoggedIn ? AppColors.dustyRose : AppColors.primaryGold,
+                foregroundColor:
+                    isLoggedIn ? AppColors.creamPaper : AppColors.woodBrown,
+                elevation: 4,
+                shadowColor: Colors.black.withOpacity(0.3),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: BorderSide(
+                    color:
+                        isLoggedIn
+                            ? AppColors.dustyRose.withOpacity(0.5)
+                            : AppColors.primaryGold.withOpacity(0.5),
+                    width: 2,
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 14,
+                ),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              icon: Icon(isLoggedIn ? Icons.logout : Icons.login, size: 18),
+              label: Text(
+                isLoggedIn ? 'Đăng xuất' : 'Đăng nhập',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Serif',
+                  letterSpacing: 0.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
-            icon: Icon(isLoggedIn ? Icons.logout : Icons.login, size: 16),
-            label: Text(isLoggedIn ? 'Đăng xuất' : 'Đăng nhập'),
           ),
+        );
+      },
       loading:
-          () => const SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: AppColors.primaryGold,
+          () => Container(
+            padding: const EdgeInsets.all(12),
+            child: const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.primaryGold,
+              ),
             ),
           ),
-      error: (_, __) => const Icon(Icons.error, color: Colors.red),
+      error: (_, __) => const Icon(Icons.error, color: AppColors.dustyRose),
     );
+  }
+
+  /// Xây dựng menu mobile (popup)
+  Widget _buildMobileMenu() {
+    return PopupMenuButton<String>(
+      icon: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: AppColors.primaryGold.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: AppColors.primaryGold.withOpacity(0.4),
+            width: 2,
+          ),
+        ),
+        child: const Icon(Icons.menu, color: AppColors.primaryGold, size: 24),
+      ),
+      color: AppColors.creamPaper,
+      elevation: 8,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: AppColors.bronzeBorder.withOpacity(0.3),
+          width: 2,
+        ),
+      ),
+      onSelected: (value) {
+        switch (value) {
+          case 'Trang chủ':
+            CustomRouter.pushAndRemoveUntil(const HomePage());
+            break;
+          case 'Gia phả':
+            CustomRouter.push(const FamilyTreePage());
+            break;
+          case 'Hình ảnh':
+            CustomRouter.push(const GalleryPage());
+            break;
+          case 'Liên hệ':
+            CustomRouter.push(const ContactPage());
+            break;
+          case 'Đăng nhập':
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const LoginPage()),
+            );
+            break;
+          case 'Đăng xuất':
+            ref.read(authProvider.notifier).logout();
+            ref
+                .read(notificationProvider.notifier)
+                .show('Đã đăng xuất', type: NotificationType.info);
+            break;
+        }
+      },
+      itemBuilder: (BuildContext context) {
+        final isLoggedIn = ref.watch(authProvider).value ?? false;
+        return [
+          _buildPopupMenuItem('Trang chủ', Icons.home),
+          _buildPopupMenuItem('Gia phả', Icons.account_tree),
+          _buildPopupMenuItem('Hình ảnh', Icons.photo_library),
+          _buildPopupMenuItem('Liên hệ', Icons.contact_mail),
+          const PopupMenuDivider(),
+          _buildPopupMenuItem(
+            isLoggedIn ? 'Đăng xuất' : 'Đăng nhập',
+            isLoggedIn ? Icons.logout : Icons.login,
+          ),
+        ];
+      },
+    );
+  }
+
+  /// Xây dựng popup menu item với style vintage
+  PopupMenuItem<String> _buildPopupMenuItem(String title, IconData icon) {
+    return PopupMenuItem<String>(
+      value: title,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primaryGold.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Icon(icon, color: AppColors.woodBrown, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              title,
+              style: const TextStyle(
+                color: AppColors.woodBrown,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Serif',
+                fontSize: 15,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Legacy code removed - replaced with new vintage design above
+class _LegacyCode {
+  void _legacyBuildMethods() {
+    // Old methods kept for reference only
+    // Visibility(
+    //   visible: ref.watch(flatformNotifierProvider) != 3,
+    //   maintainState: true,
+    //   maintainAnimation: true,
+    //   maintainSize: false,
+    //   child: PopupMenuButton<String>(
   }
 }
