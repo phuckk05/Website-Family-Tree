@@ -8,8 +8,6 @@ import 'package:website_gia_pha/providers/auth_provider.dart';
 import 'package:website_gia_pha/themes/app_colors.dart';
 import 'package:website_gia_pha/widgets/main_layout.dart';
 
-/// Trang hiển thị cây gia phả với phong cách vintage 1990s
-///
 /// Trang này cho phép:
 /// - Xem toàn bộ cây gia phả dạng cây phả hệ
 /// - Phóng to/thu nhỏ và di chuyển xung quanh cây
@@ -376,8 +374,8 @@ class _FamilyTreePageState extends ConsumerState<FamilyTreePage>
                   ),
                   // Vintage Floating Controls
                   Positioned(
-                    bottom: 24,
-                    right: 24,
+                    bottom: ref.watch(flatformNotifierProvider) == 1 ? 5 : 24,
+                    right: ref.watch(flatformNotifierProvider) == 1 ? 5 : 24,
                     child: _buildVintageControls(rootMemberAsync),
                   ),
                 ],
