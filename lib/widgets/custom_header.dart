@@ -38,7 +38,7 @@ class CustomHeader extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'HỌ NGUYỄN',
+                  'HỌ NGUYỄN ĐÌNH',
                   style: TextStyle(
                     color: AppColors.primaryGold,
                     fontWeight: FontWeight.bold,
@@ -47,7 +47,7 @@ class CustomHeader extends ConsumerWidget {
                   ),
                 ),
                 Text(
-                  'TỘC ĐÌNH CHI 5',
+                  'CHI 5',
                   style: TextStyle(color: Colors.white, fontSize: 14),
                 ),
               ],

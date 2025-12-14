@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui' show ImageFilter;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:website_gia_pha/core/router/custom_router.dart';
 import 'package:website_gia_pha/pages/family_tree_page.dart';
@@ -14,192 +15,237 @@ class HomePage extends ConsumerStatefulWidget {
 }
 
 class _HomePageState extends ConsumerState<HomePage> {
+  late ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return MainLayout(
-      child: Column(
-        children: [
-          _buildHeroSection(context),
-          _buildOriginSection(context),
-          _buildIntroductionSection(context),
-          _buildFeatureCards(context),
-          const CustomFooter(),
-        ],
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        child: Column(
+          children: [
+            _buildHeroSection(context),
+            _buildStatsSection(context),
+            _buildOriginSection(context),
+            _buildTimelineSection(context),
+            _buildIntroductionSection(context),
+            _buildFeatureCards(context),
+            _buildCallToActionSection(context),
+            const CustomFooter(),
+          ],
+        ),
       ),
     );
   }
 
-  // 1. Hero Banner - Ấn tượng đầu tiên
+  // 1. HERO SECTION - Nâng cấp với animation
   Widget _buildHeroSection(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
-
-    // Trừ đi chiều cao header (ước lượng 60-80px) để banner vừa khít màn hình
     final bannerHeight = screenHeight - 80;
 
-    return SizedBox(
-      height:
-          bannerHeight > 600 ? bannerHeight : 600, // Tăng chiều cao tối thiểu
-      width: double.infinity,
-      child: Stack(
-        children: [
-          // Background Image
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/image.png', // Ưu tiên dùng ảnh thật của bạn
-              fit: BoxFit.cover,
-              alignment:
-                  Alignment.topCenter, // Căn chỉnh để lấy phần trên của cổng
-              errorBuilder: (context, error, stackTrace) {
-                return Image.network(
-                  'https://images.unsplash.com/photo-1544084944-15a3ad968a75?q=80&w=2070&auto=format&fit=crop',
+    return Stack(
+      children: [
+        SizedBox(
+          height: bannerHeight > 600 ? bannerHeight : 600,
+          width: double.infinity,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: Image.asset(
+                  'assets/images/background-pc.png',
                   fit: BoxFit.cover,
-                );
-              },
-            ),
-          ),
-          // Gradient Overlay - Tinh tế hơn để làm nổi bật chữ
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.3),
-                    Colors.black.withOpacity(0.5),
-                    Colors.black.withOpacity(0.8),
-                  ],
-                  stops: const [0.0, 0.6, 1.0],
+                  alignment: Alignment.topCenter,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: Colors.grey[800],
+                      child: const Center(child: CircularProgressIndicator()),
+                    );
+                  },
                 ),
               ),
-            ),
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.25),
+                        Colors.black.withOpacity(0.45),
+                        Colors.black.withOpacity(0.75),
+                      ],
+                      stops: const [0.0, 0.6, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          // Content
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+        ),
+        SizedBox(
+          height: bannerHeight > 600 ? bannerHeight : 600,
+          width: double.infinity,
+          child: Center(
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 20 : 60,
+                vertical: isMobile ? 40 : 60,
+              ),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: AppColors.primaryGold.withOpacity(0.7),
+                  width: 2,
+                ),
+                color: Colors.black.withOpacity(0.25),
+              ),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Dòng chữ nhỏ chào mừng
-                  Text(
-                    'CHÀO MỪNG ĐẾN VỚI',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: isMobile ? 12 : 14,
-                      letterSpacing: 4,
-                      fontWeight: FontWeight.w500,
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: 1),
+                    duration: const Duration(milliseconds: 1000),
+                    builder: (context, value, child) {
+                      return Opacity(
+                        opacity: value,
+                        child: Transform.translate(
+                          offset: Offset(0, 20 * (1 - value)),
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: Text(
+                      'CHÀO MỪNG ĐẾN VỚI',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: isMobile ? 12 : 14,
+                        letterSpacing: 4,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
-                  // Tiêu đề chính
-                  Text(
-                    'HỌ NGUYỄN\nTỘC ĐÌNH CHI 5',
-                    style: TextStyle(
-                      color: AppColors.primaryGold,
-                      fontSize: isMobile ? 32 : 56, // Responsive font size
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 2,
-                      height: 1.2,
-                      fontFamily: 'PlayfairDisplay',
-                      shadows: [
-                        Shadow(
-                          offset: Offset(0, 4),
-                          blurRadius: 20,
-                          color: Colors.black54,
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: 1),
+                    duration: const Duration(milliseconds: 1200),
+                    builder: (context, value, child) {
+                      return Opacity(
+                        opacity: value,
+                        child: Transform.scale(
+                          scale: 0.8 + (value * 0.2),
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: Text(
+                      'HỌ NGUYỄN ĐÌNH\nCHI 5',
+                      style: TextStyle(
+                        color: AppColors.primaryGold,
+                        fontSize: isMobile ? 36 : 72,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 3,
+                        height: 1.15,
+                        fontFamily: 'PlayfairDisplay',
+                        shadows: [
+                          Shadow(
+                            offset: const Offset(0, 6),
+                            blurRadius: 25,
+                            color: Colors.black.withOpacity(0.6),
+                          ),
+                        ],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: 1),
+                    duration: const Duration(milliseconds: 1400),
+                    builder: (context, value, child) {
+                      return Opacity(opacity: value, child: child);
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          height: 2,
+                          width: isMobile ? 40 : 100,
+                          color: AppColors.primaryGold.withOpacity(0.9),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 15),
+                          child: Icon(
+                            Icons.spa,
+                            color: AppColors.primaryGold,
+                            size: isMobile ? 18 : 28,
+                          ),
+                        ),
+                        Container(
+                          height: 2,
+                          width: isMobile ? 40 : 100,
+                          color: AppColors.primaryGold.withOpacity(0.9),
                         ),
                       ],
                     ),
-                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 30),
-                  // Divider trang trí
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        height: 1,
-                        width: isMobile ? 50 : 80,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.transparent,
-                              AppColors.primaryGold.withOpacity(0.8),
-                            ],
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 15),
-                        child: Icon(
-                          Icons.star,
-                          color: AppColors.primaryGold,
-                          size: isMobile ? 14 : 18,
-                        ),
-                      ),
-                      Container(
-                        height: 1,
-                        width: isMobile ? 50 : 80,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              AppColors.primaryGold.withOpacity(0.8),
-                              Colors.transparent,
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 30),
-                  // Slogan
                   Text(
                     'Nối kết dòng họ • Giữ gìn truyền thống • Gắn kết thế hệ',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: isMobile ? 16 : 20,
+                      fontSize: isMobile ? 16 : 22,
                       fontStyle: FontStyle.italic,
                       fontWeight: FontWeight.w300,
-                      letterSpacing: 1,
-                      shadows: const [
-                        Shadow(blurRadius: 10, color: Colors.black),
-                      ],
+                      letterSpacing: 1.5,
+                      shadows: [Shadow(blurRadius: 12, color: Colors.black)],
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 60),
-                  // Nút bấm được thiết kế lại sang trọng hơn
-                  OutlinedButton(
-                    onPressed: () {
+                  const SizedBox(height: 50),
+                  GestureDetector(
+                    onTap: () {
                       CustomRouter.push(const FamilyTreePage());
                     },
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primaryGold,
-                      side: const BorderSide(
-                        color: AppColors.primaryGold,
-                        width: 2,
-                      ),
+                    child: Container(
                       padding: EdgeInsets.symmetric(
-                        horizontal: isMobile ? 30 : 50,
-                        vertical: isMobile ? 15 : 25,
+                        horizontal: isMobile ? 35 : 60,
+                        vertical: isMobile ? 18 : 28,
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          0,
-                        ), // Vuông vức cổ điển
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: AppColors.primaryGold,
+                          width: 2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primaryGold.withOpacity(0.3),
+                            blurRadius: 20,
+                          ),
+                        ],
                       ),
-                      backgroundColor: Colors.black.withOpacity(
-                        0.3,
-                      ), // Nền tối nhẹ
-                    ),
-                    child: Text(
-                      'XEM CÂY GIA PHẢ',
-                      style: TextStyle(
-                        fontSize: isMobile ? 14 : 16,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 3,
+                      child: Text(
+                        'XEM CÂY GIA PHẢ',
+                        style: TextStyle(
+                          color: AppColors.primaryGold,
+                          fontSize: isMobile ? 14 : 16,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 3,
+                        ),
                       ),
                     ),
                   ),
@@ -207,17 +253,80 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
             ),
           ),
-        ],
+        ),
+      ],
+    );
+  }
+
+  // 2. STATS SECTION - MỚI
+  Widget _buildStatsSection(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 800;
+    final stats = [
+      {'number': '600+', 'label': 'Thành Viên'},
+      {'number': '25', 'label': 'Thế Hệ'},
+      {'number': '500+', 'label': 'Năm Lịch Sử'},
+    ];
+
+    return Container(
+      color: const Color(0xFF1E1E1E), // Matte Black Lighter
+      padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 20),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1200),
+          child:
+              isMobile
+                  ? Column(
+                    children:
+                        stats
+                            .map(
+                              (stat) => Padding(
+                                padding: const EdgeInsets.only(bottom: 30),
+                                child: _buildStatItem(stat),
+                              ),
+                            )
+                            .toList(),
+                  )
+                  : Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children:
+                        stats.map((stat) => _buildStatItem(stat)).toList(),
+                  ),
+        ),
       ),
     );
   }
 
-  // 2. Nguồn Gốc Section - Mới thêm
+  Widget _buildStatItem(Map<String, String> stat) {
+    return Column(
+      children: [
+        Text(
+          stat['number']!,
+          style: const TextStyle(
+            color: AppColors.primaryGold,
+            fontSize: 48,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'PlayfairDisplay',
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          stat['label']!,
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 16,
+            letterSpacing: 2,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 3. ORIGIN SECTION
   Widget _buildOriginSection(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 800;
 
     return Container(
-      color: AppColors.ivoryWhite,
+      color: const Color(0xFF121212), // Matte Black Darker
       padding: EdgeInsets.symmetric(
         vertical: 80,
         horizontal: isMobile ? 20 : 40,
@@ -230,14 +339,14 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ? Column(
                     children: [
                       _buildOriginImage(),
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 50),
                       _buildOriginText(isMobile),
                     ],
                   )
                   : Row(
                     children: [
                       Expanded(child: _buildOriginText(isMobile)),
-                      const SizedBox(width: 60),
+                      const SizedBox(width: 80),
                       Expanded(child: _buildOriginImage()),
                     ],
                   ),
@@ -250,67 +359,248 @@ class _HomePageState extends ConsumerState<HomePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'NGUỒN GỐC DÒNG HỌ',
+        Text(
+          'NGUỒN GỐC',
           style: TextStyle(
-            color: AppColors.woodBrown,
-            fontSize: 14,
+            color: AppColors.primaryGold,
+            fontSize: 13,
             fontWeight: FontWeight.bold,
-            letterSpacing: 2,
+            letterSpacing: 3,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         Text(
-          'Lịch Sử Hình Thành & Phát Triển',
+          'Lịch Sử & Truyền Thống',
           style: TextStyle(
-            color: Colors.black87,
-            fontSize: isMobile ? 24 : 32,
+            color: Colors.white, // White text
+            fontSize: isMobile ? 28 : 42,
             fontWeight: FontWeight.bold,
             fontFamily: 'PlayfairDisplay',
+            height: 1.2,
           ),
         ),
         const SizedBox(height: 20),
+        Container(height: 4, width: 50, color: AppColors.primaryGold),
+        const SizedBox(height: 25),
         const Text(
-          'Dòng họ Nguyễn Chi 5 có nguồn gốc từ vùng đất địa linh nhân kiệt... (Nội dung mẫu: Trải qua bao thăng trầm của lịch sử, các bậc tiền nhân đã dày công vun đắp, xây dựng nền móng vững chắc cho con cháu đời sau. Từ những ngày đầu khai hoang lập ấp, dòng họ đã luôn giữ vững nề nếp gia phong, đoàn kết thương yêu nhau.)',
-          style: TextStyle(color: Colors.black54, fontSize: 16, height: 1.6),
+          'Nguyễn Xí (1397-1465) - Thái sư Cương quốc công, là thủy tổ của dòng họ Nguyễn Đình. Ông có công lao to lớn trong khởi nghĩa Lam Sơn, tham gia đánh đuổi giặc Minh, giành lại độc lập cho dân tộc.',
+          style: TextStyle(
+            color: Colors.white70, // Light grey text
+            fontSize: 16,
+            height: 1.7,
+            fontWeight: FontWeight.w500,
+          ),
           textAlign: TextAlign.justify,
         ),
         const SizedBox(height: 20),
         const Text(
-          'Cây có cội, nước có nguồn. Con người có tổ có tông. Việc tìm về nguồn cội không chỉ là tri ân tổ tiên mà còn là bài học quý báu cho thế hệ trẻ về đạo lý uống nước nhớ nguồn.',
-          style: TextStyle(color: Colors.black54, fontSize: 16, height: 1.6),
-          textAlign: TextAlign.justify,
+          '"Cây có cội, nước có nguồn. Con người có tổ có tông."',
+          style: TextStyle(
+            color: AppColors.primaryGold, // Gold text
+            fontSize: 15,
+            height: 1.7,
+            fontStyle: FontStyle.italic,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ],
     );
   }
 
   Widget _buildOriginImage() {
-    return Container(
-      height: 400,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-        image: const DecorationImage(
-          image: AssetImage('assets/images/image.png'), // Ảnh đình làng/cổ kính
-          fit: BoxFit.cover,
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 800),
+      builder: (context, value, child) {
+        return Transform.scale(
+          scale: 0.9 + (value * 0.1),
+          child: Opacity(opacity: value, child: child),
+        );
+      },
+      child: Container(
+        height: 450,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20), // Rounded corners
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.5),
+              blurRadius: 35,
+              offset: const Offset(0, 20),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Image.asset('assets/images/image.png', fit: BoxFit.cover),
         ),
       ),
     );
   }
 
-  // 3. Giới Thiệu Section
+  // 4. TIMELINE SECTION - MỚI
+  Widget _buildTimelineSection(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 800;
+
+    return Container(
+      color: const Color(0xFF1E1E1E), // Matte Black Lighter
+      padding: EdgeInsets.symmetric(
+        vertical: 80,
+        horizontal: isMobile ? 20 : 40,
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1200),
+          child: Column(
+            children: [
+              Text(
+                'DÒNG THỜI GIAN',
+                style: TextStyle(
+                  color: AppColors.primaryGold,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 3,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Các Mốc Lịch Sử Quan Trọng',
+                style: TextStyle(
+                  color: Colors.white, // White text
+                  fontSize: isMobile ? 28 : 42,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'PlayfairDisplay',
+                ),
+              ),
+              const SizedBox(height: 50),
+              isMobile ? _buildTimelineMobile() : _buildTimelineDesktop(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimelineDesktop() {
+    final events = [
+      {'year': '1397', 'event': 'Nguyễn Xí sinh ra'},
+      {'year': '1427', 'event': 'Tham gia Lam Sơn'},
+      {'year': '1465', 'event': 'Phong Thái sư'},
+      {'year': '2024', 'event': 'Website Gia Phả'},
+    ];
+
+    return Row(
+      children: List.generate(
+        events.length,
+        (index) => Expanded(
+          child: Column(
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.primaryGold, width: 3),
+                  color: Colors.black, // Dark circle
+                ),
+                child: Center(
+                  child: Text(
+                    events[index]['year']!,
+                    style: const TextStyle(
+                      color: AppColors.primaryGold, // Gold text
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                events[index]['event']!,
+                style: const TextStyle(
+                  color: Colors.white70, // Light grey text
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimelineMobile() {
+    final events = [
+      {'year': '1397', 'event': 'Nguyễn Xí sinh ra'},
+      {'year': '1427', 'event': 'Tham gia Lam Sơn'},
+      {'year': '1465', 'event': 'Phong Thái sư'},
+      {'year': '2024', 'event': 'Website Gia Phả'},
+    ];
+
+    return Column(
+      children: List.generate(
+        events.length,
+        (index) => Padding(
+          padding: const EdgeInsets.only(bottom: 40),
+          child: Row(
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.primaryGold, width: 2),
+                  color: Colors.black, // Dark circle
+                ),
+                child: Center(
+                  child: Text(
+                    events[index]['year']!.substring(2),
+                    style: const TextStyle(
+                      color: AppColors.primaryGold, // Gold text
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      events[index]['year']!,
+                      style: const TextStyle(
+                        color: AppColors.primaryGold,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      events[index]['event']!,
+                      style: const TextStyle(
+                        color: Colors.white70, // Light grey text
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 5. INTRODUCTION SECTION
   Widget _buildIntroductionSection(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 800;
 
     return Container(
-      color: const Color(0xFFF5F5F5), // Màu nền nhẹ khác biệt
+      color: const Color(0xFF121212), // Matte Black Darker
       padding: EdgeInsets.symmetric(
         vertical: 80,
         horizontal: isMobile ? 20 : 40,
@@ -323,14 +613,14 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ? Column(
                     children: [
                       _buildIntroImage(),
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 50),
                       _buildIntroText(isMobile),
                     ],
                   )
                   : Row(
                     children: [
                       Expanded(child: _buildIntroImage()),
-                      const SizedBox(width: 60),
+                      const SizedBox(width: 80),
                       Expanded(child: _buildIntroText(isMobile)),
                     ],
                   ),
@@ -343,110 +633,133 @@ class _HomePageState extends ConsumerState<HomePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'GIỚI THIỆU',
+        Text(
+          'VỀ WEBSITE',
           style: TextStyle(
-            color: AppColors.woodBrown,
-            fontSize: 14,
+            color: AppColors.primaryGold,
+            fontSize: 13,
             fontWeight: FontWeight.bold,
-            letterSpacing: 2,
+            letterSpacing: 3,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         Text(
-          'Gia Phả - Báu Vật Tinh Thần',
+          'Kết Nối & Giữ Gìn Truyền Thống',
           style: TextStyle(
-            color: Colors.black87,
-            fontSize: isMobile ? 24 : 32,
+            color: Colors.white, // White text
+            fontSize: isMobile ? 28 : 42,
             fontWeight: FontWeight.bold,
             fontFamily: 'PlayfairDisplay',
           ),
         ),
         const SizedBox(height: 20),
+        Container(height: 4, width: 50, color: AppColors.primaryGold),
+        const SizedBox(height: 25),
         const Text(
-          'Website Gia Phả Họ Nguyễn Chi 5 được xây dựng với mong muốn kết nối tất cả các thành viên trong dòng họ, dù đang sinh sống ở bất cứ nơi đâu. Đây là nơi lưu giữ những thông tin quý giá về phả hệ, tiểu sử các bậc tiền nhân, và cập nhật những tin tức, sự kiện mới nhất của dòng họ.',
-          style: TextStyle(color: Colors.black54, fontSize: 16, height: 1.6),
+          'Website Gia Phả Họ Nguyễn Đình - Chi 5 được xây dựng để kết nối các thành viên dòng họ, lưu giữ thông tin quý giá về phả hệ và tiểu sử các bậc tiền nhân.',
+          style: TextStyle(color: Colors.white70, fontSize: 16, height: 1.7),
           textAlign: TextAlign.justify,
         ),
         const SizedBox(height: 30),
-        OutlinedButton(
-          onPressed: () {},
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.woodBrown,
-            side: const BorderSide(color: AppColors.woodBrown),
+        GestureDetector(
+          onTap: () {},
+          child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: AppColors.primaryGold,
+                width: 2,
+              ), // Gold border
+            ),
+            child: const Text(
+              'XEM CHI TIẾT',
+              style: TextStyle(
+                color: AppColors.primaryGold, // Gold text
+                fontWeight: FontWeight.bold,
+                letterSpacing: 2,
+              ),
+            ),
           ),
-          child: const Text('XEM CHI TIẾT'),
         ),
       ],
     );
   }
 
   Widget _buildIntroImage() {
-    return Container(
-      height: 400,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-        image: const DecorationImage(
-          image: NetworkImage('assets/images/image.png'), // Ảnh sách cũ/gia phả
-          fit: BoxFit.cover,
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 800),
+      builder: (context, value, child) {
+        return Transform.scale(
+          scale: 0.9 + (value * 0.1),
+          child: Opacity(opacity: value, child: child),
+        );
+      },
+      child: Container(
+        height: 450,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20), // Rounded corners
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.5),
+              blurRadius: 30,
+              offset: const Offset(8, 8),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Image.asset('assets/images/image.png', fit: BoxFit.cover),
         ),
       ),
     );
   }
 
-  // 4. Feature Cards
+  // 6. FEATURE CARDS
   Widget _buildFeatureCards(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
-    final cardWidth = isMobile ? screenWidth - 40 : 350.0;
+    final cardWidth = isMobile ? screenWidth - 40 : 360.0;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 20),
-      color: AppColors.ivoryWhite,
+      color: const Color(0xFF1E1E1E), // Matte Black Lighter
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1200),
           child: Column(
             children: [
-              const Text(
+              Text(
                 'KHÁM PHÁ',
                 style: TextStyle(
-                  color: AppColors.woodBrown,
-                  fontSize: 14,
+                  color: AppColors.primaryGold,
+                  fontSize: 13,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 2,
+                  letterSpacing: 3,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               Text(
                 'Hoạt Động & Tư Liệu',
                 style: TextStyle(
-                  color: Colors.black87,
-                  fontSize: isMobile ? 24 : 32,
+                  color: Colors.white, // White text
+                  fontSize: isMobile ? 28 : 42,
                   fontWeight: FontWeight.bold,
                   fontFamily: 'PlayfairDisplay',
                 ),
               ),
-              const SizedBox(height: 50),
+              const SizedBox(height: 60),
               Wrap(
-                spacing: 30,
-                runSpacing: 30,
+                spacing: 35,
+                runSpacing: 35,
                 alignment: WrapAlignment.center,
                 children: [
                   _buildCard(
                     width: cardWidth,
                     icon: Icons.event,
-                    title: 'Sự Kiện Dòng Họ',
+                    title: 'Sự Kiện',
                     description:
-                        'Cập nhật các ngày giỗ tổ, họp mặt và các sự kiện quan trọng.',
+                        'Cập nhật các ngày giỗ tổ và sự kiện quan trọng.',
                     imageUrl:
                         'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=2069&auto=format&fit=crop',
                   ),
@@ -454,17 +767,15 @@ class _HomePageState extends ConsumerState<HomePage> {
                     width: cardWidth,
                     icon: Icons.people,
                     title: 'Thành Viên',
-                    description:
-                        'Danh sách các thành viên, thông tin liên lạc và đóng góp.',
+                    description: 'Danh sách thành viên và thông tin liên lạc.',
                     imageUrl:
                         'https://images.unsplash.com/photo-1511895426328-dc8714191300?q=80&w=2070&auto=format&fit=crop',
                   ),
                   _buildCard(
                     width: cardWidth,
                     icon: Icons.photo_library,
-                    title: 'Thư Viện Ảnh',
-                    description:
-                        'Lưu giữ những khoảnh khắc đáng nhớ của đại gia đình.',
+                    title: 'Thư Viện',
+                    description: 'Lưu giữ những khoảnh khắc của đại gia đình.',
                     imageUrl:
                         'https://images.unsplash.com/photo-1509909756405-be0199881695?q=80&w=2070&auto=format&fit=crop',
                   ),
@@ -487,78 +798,195 @@ class _HomePageState extends ConsumerState<HomePage> {
     return Container(
       width: width,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
+        color: const Color(0xFF2C2C2C), // Dark card background
+        borderRadius: BorderRadius.circular(20), // Rounded card
+        border: Border.all(
+          color: AppColors.primaryGold.withOpacity(0.1),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 25,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-            child: Image.network(
-              imageUrl,
-              height: 200,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder:
-                  (_, __, ___) => Container(
-                    height: 200,
-                    color: Colors.grey[300],
-                    child: const Icon(Icons.image_not_supported),
-                  ),
+          Container(
+            height: 220,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ), // Rounded top image
+            ),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder:
+                    (_, __, ___) => Container(
+                      color: Colors.grey[800],
+                      child: const Icon(Icons.image_not_supported),
+                    ),
+              ),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(28),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Icon(icon, color: AppColors.primaryGold),
-                    const SizedBox(width: 10),
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.woodBrown,
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.black, // Dark icon background
+                        border: Border.all(
+                          color: AppColors.primaryGold,
+                          width: 1.5,
+                        ),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        icon,
+                        color: AppColors.primaryGold,
+                        size: 22,
+                      ), // Gold icon
+                    ),
+                    const SizedBox(width: 15),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 19,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryGold, // Gold title
+                          fontFamily: 'PlayfairDisplay',
+                        ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 16),
                 Text(
                   description,
-                  style: const TextStyle(color: Colors.black54, height: 1.5),
-                ),
-                const SizedBox(height: 20),
-                TextButton(
-                  onPressed: () {},
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    foregroundColor: AppColors.primaryGold,
+                  style: const TextStyle(
+                    color: Colors.white70, // Light grey description
+                    height: 1.6,
+                    fontSize: 15,
                   ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('Xem thêm'),
-                      SizedBox(width: 5),
-                      Icon(Icons.arrow_forward, size: 16),
-                    ],
+                ),
+                const SizedBox(height: 22),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: GestureDetector(
+                    onTap: () {},
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Text(
+                          'CHI TIẾT',
+                          style: TextStyle(
+                            color: AppColors.primaryGold, // Gold button text
+                            letterSpacing: 2,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Icon(
+                          Icons.arrow_forward,
+                          size: 16,
+                          color: AppColors.primaryGold,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // 7. CALL TO ACTION SECTION
+  Widget _buildCallToActionSection(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 800;
+
+    return Container(
+      color: const Color(0xFF121212), // Matte Black Darker
+      padding: EdgeInsets.symmetric(
+        vertical: isMobile ? 60 : 80,
+        horizontal: 20,
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 900),
+          child: Column(
+            children: [
+              Text(
+                'Bạn là thành viên Họ Nguyễn Đình?',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: isMobile ? 24 : 36,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'PlayfairDisplay',
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Hãy đăng ký để cập nhật thông tin gia phả và kết nối với các thành viên khác',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: isMobile ? 16 : 18,
+                  height: 1.6,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 40),
+              GestureDetector(
+                onTap: () {},
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile ? 35 : 55,
+                    vertical: isMobile ? 16 : 20,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryGold,
+                    borderRadius: BorderRadius.circular(30), // Rounded button
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primaryGold.withOpacity(0.4),
+                        blurRadius: 20,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: const Text(
+                    'ĐĂNG KÝ NGAY',
+                    style: TextStyle(
+                      color: AppColors.woodBrown,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

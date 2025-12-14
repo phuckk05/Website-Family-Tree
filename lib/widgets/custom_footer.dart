@@ -7,12 +7,12 @@ class CustomFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.woodBrown,
+      color: const Color(0xFF050505), // Darker matte black for footer
       padding: const EdgeInsets.all(40),
       child: Column(
         children: [
           const Text(
-            'HỌ NGUYỄN – TỘC ĐÌNH CHI 5',
+            'HỌ NGUYỄN ĐÌNH - CHI 5',
             style: TextStyle(
               color: AppColors.primaryGold,
               fontSize: 20,
@@ -25,14 +25,14 @@ class CustomFooter extends StatelessWidget {
             style: TextStyle(color: Colors.white),
           ),
           const Text(
-            'Email: lienhe@honguyen.com | SĐT: 0909 123 456',
+            'Email: phuckk2101@gmail.com | SĐT: 0328262101',
             style: TextStyle(color: Colors.white),
           ),
           const SizedBox(height: 20),
           const Divider(color: Colors.white24),
           const SizedBox(height: 10),
           const Text(
-            '© 2025 Họ Nguyễn – Tộc Đình Chi 5',
+            '© 2025 Họ Nguyễn Đình - Chi 5',
             style: TextStyle(color: Colors.white54),
           ),
         ],

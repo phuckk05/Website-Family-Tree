@@ -3,6 +3,7 @@
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 ///
@@ -46,30 +47,30 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDNhrySr79meukkK7D59isSrfoihApLSdI',
-    appId: '1:340219657596:web:c94f8dc7a52d3d0132f8f9',
-    messagingSenderId: '340219657596',
-    projectId: 'website-gia-pha-6eca4',
-    authDomain: 'website-gia-pha-6eca4.firebaseapp.com',
-    storageBucket: 'website-gia-pha-6eca4.firebasestorage.app',
-    measurementId: 'G-X7MWYRDJRQ',
+  static FirebaseOptions get web => FirebaseOptions(
+    apiKey: dotenv.env['WEB_API_KEY']!,
+    appId: dotenv.env['WEB_APP_ID']!,
+    messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID']!,
+    projectId: dotenv.env['FIREBASE_PROJECT_ID']!,
+    authDomain: dotenv.env['WEB_AUTH_DOMAIN'],
+    storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'],
+    measurementId: dotenv.env['WEB_MEASUREMENT_ID'],
   );
 
-  static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCFDMZcfDBk-StiaZXQojYxDkLS_obw-lo',
-    appId: '1:340219657596:android:b8933653c0570d6b32f8f9',
-    messagingSenderId: '340219657596',
-    projectId: 'website-gia-pha-6eca4',
-    storageBucket: 'website-gia-pha-6eca4.firebasestorage.app',
+  static FirebaseOptions get android => FirebaseOptions(
+    apiKey: dotenv.env['ANDROID_API_KEY']!,
+    appId: dotenv.env['ANDROID_APP_ID']!,
+    messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID']!,
+    projectId: dotenv.env['FIREBASE_PROJECT_ID']!,
+    storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'],
   );
 
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAFcZn-h9N70kXzLME5y89I3MYAZp-_edk',
-    appId: '1:340219657596:ios:248fc03b8f53ae4832f8f9',
-    messagingSenderId: '340219657596',
-    projectId: 'website-gia-pha-6eca4',
-    storageBucket: 'website-gia-pha-6eca4.firebasestorage.app',
-    iosBundleId: 'com.example.websiteGiaPha',
+  static FirebaseOptions get ios => FirebaseOptions(
+    apiKey: dotenv.env['IOS_API_KEY']!,
+    appId: dotenv.env['IOS_APP_ID']!,
+    messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID']!,
+    projectId: dotenv.env['FIREBASE_PROJECT_ID']!,
+    storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'],
+    iosBundleId: dotenv.env['IOS_BUNDLE_ID'],
   );
 }
