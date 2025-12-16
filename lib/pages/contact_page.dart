@@ -1,9 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:website_gia_pha/core/size/flatform.dart';
 import 'package:website_gia_pha/providers/notification_provider.dart';
 import 'package:website_gia_pha/themes/app_colors.dart';
 import 'package:website_gia_pha/widgets/main_layout.dart';
+
+// StateProvider cho trạng thái gửi
+final _isSendingProvider = StateProvider.autoDispose<bool>((ref) => false);
+
+// StateProvider cho loại yêu cầu
+final _selectedRequestTypeProvider = StateProvider.autoDispose<String>(
+  (ref) => 'Yêu cầu cấp tài khoản',
+);
 
 class ContactPage extends ConsumerStatefulWidget {
   const ContactPage({super.key});
@@ -18,7 +27,6 @@ class _ContactPageState extends ConsumerState<ContactPage> {
   final _contactController = TextEditingController();
   final _contentController = TextEditingController();
 
-  String _selectedRequestType = 'Yêu cầu cấp tài khoản';
   final List<String> _requestTypes = [
     'Yêu cầu cấp tài khoản',
     'Yêu cầu đổi thông tin',
@@ -26,17 +34,15 @@ class _ContactPageState extends ConsumerState<ContactPage> {
     'Khác',
   ];
 
-  bool _isSending = false;
-
   Future<void> _sendEmail() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isSending = true);
+    ref.read(_isSendingProvider.notifier).state = true;
 
     try {
       // Lưu vào Firestore vì Web không hỗ trợ gửi mail trực tiếp qua SMTP (Socket Exception)
       await FirebaseFirestore.instance.collection('contact_requests').add({
-        'type': _selectedRequestType,
+        'type': ref.read(_selectedRequestTypeProvider),
         'name': _nameController.text,
         'contact': _contactController.text,
         'content': _contentController.text,
@@ -55,9 +61,8 @@ class _ContactPageState extends ConsumerState<ContactPage> {
         _nameController.clear();
         _contactController.clear();
         _contentController.clear();
-        setState(() {
-          _selectedRequestType = _requestTypes[0];
-        });
+        ref.read(_selectedRequestTypeProvider.notifier).state =
+            _requestTypes[0];
       }
     } catch (e) {
       if (mounted) {
@@ -67,7 +72,7 @@ class _ContactPageState extends ConsumerState<ContactPage> {
       }
     } finally {
       if (mounted) {
-        setState(() => _isSending = false);
+        ref.read(_isSendingProvider.notifier).state = false;
       }
     }
   }
@@ -104,28 +109,34 @@ class _ContactPageState extends ConsumerState<ContactPage> {
               _buildVintageHeader(),
 
               // Content
-              Padding(
-                padding: const EdgeInsets.all(32.0),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 900),
-                    child: Column(
-                      children: [
-                        // Contact Info Cards
-                        _buildContactInfoCards(),
-                        const SizedBox(height: 48),
+              Builder(
+                builder: (context) {
+                  final platform = ref.watch(flatformNotifierProvider);
+                  final isMobile = platform == 1;
+                  return Padding(
+                    padding: EdgeInsets.all(isMobile ? 10 : 32),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 900),
+                        child: Column(
+                          children: [
+                            // Contact Info Cards
+                            _buildContactInfoCards(),
+                            const SizedBox(height: 48),
 
-                        // Form Section Header
-                        _buildFormHeader(),
-                        const SizedBox(height: 24),
+                            // Form Section Header
+                            _buildFormHeader(),
+                            const SizedBox(height: 24),
 
-                        // Form Section
-                        _buildVintageForm(),
-                        const SizedBox(height: 40),
-                      ],
+                            // Form Section
+                            _buildVintageForm(),
+                            const SizedBox(height: 40),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
             ],
           ),
@@ -136,8 +147,13 @@ class _ContactPageState extends ConsumerState<ContactPage> {
 
   /// Xây dựng header vintage
   Widget _buildVintageHeader() {
+    final platform = ref.watch(flatformNotifierProvider);
+    final isMobile = platform == 1;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 10 : 32,
+        vertical: isMobile ? 20 : 40,
+      ),
       decoration: BoxDecoration(
         // color: AppColors.creamPaper.withOpacity(0.9),
         // border: Border(
@@ -174,7 +190,7 @@ class _ContactPageState extends ConsumerState<ContactPage> {
             'LIÊN HỆ & GÓP Ý',
             style: TextStyle(
               fontFamily: 'serif',
-              fontSize: 36,
+              fontSize: isMobile ? 28 : 48,
               fontWeight: FontWeight.w600,
               color: AppColors.darkBrown,
               letterSpacing: 6,
@@ -448,7 +464,7 @@ class _ContactPageState extends ConsumerState<ContactPage> {
         ),
       ),
       child: DropdownButtonFormField<String>(
-        value: _selectedRequestType,
+        value: ref.watch(_selectedRequestTypeProvider),
         decoration: InputDecoration(
           labelText: 'Loại yêu cầu',
           labelStyle: TextStyle(
@@ -478,9 +494,7 @@ class _ContactPageState extends ConsumerState<ContactPage> {
             }).toList(),
         onChanged: (String? newValue) {
           if (newValue != null) {
-            setState(() {
-              _selectedRequestType = newValue;
-            });
+            ref.read(_selectedRequestTypeProvider.notifier).state = newValue;
           }
         },
       ),
@@ -556,7 +570,7 @@ class _ContactPageState extends ConsumerState<ContactPage> {
           ],
         ),
         child: ElevatedButton(
-          onPressed: _isSending ? null : _sendEmail,
+          onPressed: ref.watch(_isSendingProvider) ? null : _sendEmail,
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
@@ -566,7 +580,7 @@ class _ContactPageState extends ConsumerState<ContactPage> {
             ),
           ),
           child:
-              _isSending
+              ref.watch(_isSendingProvider)
                   ? Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [

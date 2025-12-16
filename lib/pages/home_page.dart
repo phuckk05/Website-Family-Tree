@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:website_gia_pha/core/router/custom_router.dart';
+import 'package:website_gia_pha/core/size/flatform.dart';
 import 'package:website_gia_pha/pages/family_tree_page.dart';
 import 'package:website_gia_pha/themes/app_colors.dart';
 import 'package:website_gia_pha/widgets/main_layout.dart';
@@ -66,8 +67,8 @@ class _HomePageState extends ConsumerState<HomePage>
 
   // 1. HERO SECTION - Family Heritage Banner
   Widget _buildHeroSection(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 800;
+    final platform = ref.watch(flatformNotifierProvider);
+    final isMobile = platform == 1;
     final parallaxOffset = _scrollOffset * 0.3;
 
     return Container(
@@ -115,7 +116,7 @@ class _HomePageState extends ConsumerState<HomePage>
           // Decorative vintage frame border
           Positioned.fill(
             child: Container(
-              margin: EdgeInsets.all(isMobile ? 20 : 40),
+              margin: EdgeInsets.all(isMobile ? 10 : 40),
               decoration: BoxDecoration(
                 border: Border.all(
                   color: AppColors.sepiaTone.withOpacity(0.3),
@@ -132,7 +133,7 @@ class _HomePageState extends ConsumerState<HomePage>
               opacity: _fadeController,
               child: Container(
                 padding: EdgeInsets.symmetric(
-                  horizontal: isMobile ? 20 : 60,
+                  horizontal: isMobile ? 10 : 60,
                   vertical: 40,
                 ),
                 constraints: const BoxConstraints(maxWidth: 900),
@@ -232,13 +233,13 @@ class _HomePageState extends ConsumerState<HomePage>
 
   // 2. INTRODUCTION SECTION
   Widget _buildIntroductionSection(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 800;
+    final platform = ref.watch(flatformNotifierProvider);
+    final isMobile = platform == 1;
 
     return Container(
       padding: EdgeInsets.symmetric(
         vertical: isMobile ? 60 : 100,
-        horizontal: isMobile ? 20 : 40,
+        horizontal: isMobile ? 10 : 40,
       ),
       child: Center(
         child: ConstrainedBox(
@@ -375,13 +376,13 @@ class _HomePageState extends ConsumerState<HomePage>
 
   // 3. FAMILY TREE PREVIEW
   Widget _buildFamilyTreePreview(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 800;
+    final platform = ref.watch(flatformNotifierProvider);
+    final isMobile = platform == 1;
 
     return Container(
       padding: EdgeInsets.symmetric(
         vertical: isMobile ? 60 : 100,
-        horizontal: isMobile ? 20 : 40,
+        horizontal: isMobile ? 10 : 40,
       ),
       color: AppColors.creamPaper,
       child: Center(
@@ -489,13 +490,13 @@ class _HomePageState extends ConsumerState<HomePage>
 
   // 4. GENERATIONS TIMELINE
   Widget _buildGenerationsTimeline(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 800;
+    final platform = ref.watch(flatformNotifierProvider);
+    final isMobile = platform == 1;
 
     return Container(
       padding: EdgeInsets.symmetric(
         vertical: isMobile ? 60 : 100,
-        horizontal: isMobile ? 20 : 40,
+        horizontal: isMobile ? 10 : 40,
       ),
       child: Center(
         child: ConstrainedBox(
@@ -608,13 +609,13 @@ class _HomePageState extends ConsumerState<HomePage>
 
   // 5. ANCESTRAL STORIES
   Widget _buildAncestralStories(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 800;
+    final platform = ref.watch(flatformNotifierProvider);
+    final isMobile = platform == 1;
 
     return Container(
       padding: EdgeInsets.symmetric(
         vertical: isMobile ? 60 : 100,
-        horizontal: isMobile ? 20 : 40,
+        horizontal: isMobile ? 10 : 40,
       ),
       color: AppColors.creamPaper,
       child: Center(
@@ -723,13 +724,13 @@ class _HomePageState extends ConsumerState<HomePage>
 
   // 6. PHOTO GALLERY PREVIEW
   Widget _buildPhotoGallery(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 800;
+    final platform = ref.watch(flatformNotifierProvider);
+    final isMobile = platform == 1;
 
     return Container(
       padding: EdgeInsets.symmetric(
         vertical: isMobile ? 60 : 100,
-        horizontal: isMobile ? 20 : 40,
+        horizontal: isMobile ? 10 : 40,
       ),
       child: Center(
         child: ConstrainedBox(

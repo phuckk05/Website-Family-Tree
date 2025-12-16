@@ -8,6 +8,16 @@ import 'package:website_gia_pha/providers/auth_provider.dart';
 import 'package:website_gia_pha/themes/app_colors.dart';
 import 'package:website_gia_pha/widgets/main_layout.dart';
 
+// StateProvider cho giới tính trong edit dialog
+final _editDialogGenderProvider = StateProvider.autoDispose<bool>(
+  (ref) => true,
+);
+
+// StateProvider cho giới tính trong add child dialog
+final _addChildDialogGenderProvider = StateProvider.autoDispose<bool>(
+  (ref) => true,
+);
+
 /// Trang này cho phép:
 /// - Xem toàn bộ cây gia phả dạng cây phả hệ
 /// - Phóng to/thu nhỏ và di chuyển xung quanh cây
@@ -258,45 +268,7 @@ class _FamilyTreePageState extends ConsumerState<FamilyTreePage>
                   ),
                 ],
               ),
-              child: Column(
-                children: [
-                  // Title with vintage typography
-                  // Text(
-                  //   'PHẢ HỆ GIA TỘC',
-                  //   style: TextStyle(
-                  //     fontFamily: 'serif',
-                  //     fontSize: 32,
-                  //     fontWeight: FontWeight.w600,
-                  //     color: AppColors.darkBrown,
-                  //     letterSpacing: 4,
-                  //     shadows: [
-                  //       Shadow(
-                  //         color: AppColors.sepiaTone.withOpacity(0.3),
-                  //         offset: const Offset(2, 2),
-                  //         blurRadius: 4,
-                  //       ),
-                  //     ],
-                  //   ),
-                  // ),
-                  // const SizedBox(height: 8),
-                  // Container(
-                  //   height: 2,
-                  //   width: 200,
-                  //   decoration: BoxDecoration(
-                  //     gradient: LinearGradient(
-                  //       colors: [
-                  //         Colors.transparent,
-                  //         AppColors.goldBorder,
-                  //         Colors.transparent,
-                  //       ],
-                  //     ),
-                  //   ),
-                  // ),
-                  // const SizedBox(height: 20),
-                  // Search Bar with vintage styling
-                  _buildVintageSearchBar(handleSearch),
-                ],
-              ),
+              child: Column(children: [_buildVintageSearchBar(handleSearch)]),
             ),
             // Tree View with old paper texture
             Expanded(
@@ -1116,6 +1088,10 @@ class _FamilyTreePageState extends ConsumerState<FamilyTreePage>
       builder:
           (context) => Dialog(
             backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 24,
+            ),
             child: Container(
               constraints: const BoxConstraints(maxWidth: 500),
               decoration: BoxDecoration(
@@ -1258,241 +1234,268 @@ class _FamilyTreePageState extends ConsumerState<FamilyTreePage>
     final spousesController = TextEditingController(
       text: member.spouses.join(', '),
     );
-    bool isMale = member.isMale;
-
     showDialog(
       context: context,
       builder:
-          (context) => StatefulBuilder(
-            builder: (context, setState) {
+          (context) => Consumer(
+            builder: (context, ref, child) {
+              // Khởi tạo giá trị ban đầu
+              ref.read(_editDialogGenderProvider.notifier).state =
+                  member.isMale;
               return Dialog(
                 backgroundColor: Colors.transparent,
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 550),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [AppColors.creamPaper, AppColors.warmBeige],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.goldBorder, width: 3),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
+                insetPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 24,
+                ),
+                child: SingleChildScrollView(
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 550),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [AppColors.creamPaper, AppColors.warmBeige],
                       ),
-                    ],
-                  ),
-                  padding: const EdgeInsets.all(32),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'SỬA THÔNG TIN',
-                          style: TextStyle(
-                            fontFamily: 'serif',
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.darkBrown,
-                            letterSpacing: 2,
-                          ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.goldBorder, width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
                         ),
-                        const SizedBox(height: 8),
-                        Container(
-                          height: 2,
-                          width: 100,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.transparent,
-                                AppColors.goldBorder,
-                                Colors.transparent,
+                      ],
+                    ),
+                    padding: const EdgeInsets.all(32),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'SỬA THÔNG TIN',
+                            style: TextStyle(
+                              fontFamily: 'serif',
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.darkBrown,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            height: 2,
+                            width: 100,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.transparent,
+                                  AppColors.goldBorder,
+                                  Colors.transparent,
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          _buildVintageTextField(
+                            controller: nameController,
+                            label: 'Họ và tên',
+                            icon: Icons.person_outline,
+                          ),
+                          const SizedBox(height: 16),
+                          _buildVintageTextField(
+                            controller: roleController,
+                            label: 'Vai trò',
+                            icon: Icons.badge_outlined,
+                          ),
+                          const SizedBox(height: 16),
+                          _buildVintageTextField(
+                            controller: birthDateController,
+                            label: 'Năm sinh',
+                            icon: Icons.calendar_today_outlined,
+                          ),
+                          const SizedBox(height: 16),
+                          _buildVintageTextField(
+                            controller: orderController,
+                            label: 'Thứ tự (1, 2, 3...)',
+                            icon: Icons.format_list_numbered,
+                            keyboardType: TextInputType.number,
+                          ),
+                          const SizedBox(height: 16),
+                          _buildVintageTextField(
+                            controller: spousesController,
+                            label: 'Vợ/Chồng (ngăn cách bởi dấu phẩy)',
+                            icon: Icons.favorite_border,
+                          ),
+                          const SizedBox(height: 20),
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.vintageIvory.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: AppColors.bronzeBorder.withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Giới tính:',
+                                  style: TextStyle(
+                                    fontFamily: 'serif',
+                                    fontSize: 15,
+                                    color: AppColors.mutedText,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Radio<bool>(
+                                  value: true,
+                                  groupValue: ref.watch(
+                                    _editDialogGenderProvider,
+                                  ),
+                                  onChanged:
+                                      (val) =>
+                                          ref
+                                              .read(
+                                                _editDialogGenderProvider
+                                                    .notifier,
+                                              )
+                                              .state = val!,
+                                  activeColor: AppColors.deepGreen,
+                                ),
+                                Text(
+                                  'Nam',
+                                  style: TextStyle(
+                                    fontFamily: 'serif',
+                                    fontSize: 15,
+                                    color: AppColors.darkBrown,
+                                  ),
+                                ),
+                                const SizedBox(width: 20),
+                                Radio<bool>(
+                                  value: false,
+                                  groupValue: ref.watch(
+                                    _editDialogGenderProvider,
+                                  ),
+                                  onChanged:
+                                      (val) =>
+                                          ref
+                                              .read(
+                                                _editDialogGenderProvider
+                                                    .notifier,
+                                              )
+                                              .state = val!,
+                                  activeColor: AppColors.dustyRose,
+                                ),
+                                Text(
+                                  'Nữ',
+                                  style: TextStyle(
+                                    fontFamily: 'serif',
+                                    fontSize: 15,
+                                    color: AppColors.darkBrown,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 24),
-                        _buildVintageTextField(
-                          controller: nameController,
-                          label: 'Họ và tên',
-                          icon: Icons.person_outline,
-                        ),
-                        const SizedBox(height: 16),
-                        _buildVintageTextField(
-                          controller: roleController,
-                          label: 'Vai trò',
-                          icon: Icons.badge_outlined,
-                        ),
-                        const SizedBox(height: 16),
-                        _buildVintageTextField(
-                          controller: birthDateController,
-                          label: 'Năm sinh',
-                          icon: Icons.calendar_today_outlined,
-                        ),
-                        const SizedBox(height: 16),
-                        _buildVintageTextField(
-                          controller: orderController,
-                          label: 'Thứ tự (1, 2, 3...)',
-                          icon: Icons.format_list_numbered,
-                          keyboardType: TextInputType.number,
-                        ),
-                        const SizedBox(height: 16),
-                        _buildVintageTextField(
-                          controller: spousesController,
-                          label: 'Vợ/Chồng (ngăn cách bởi dấu phẩy)',
-                          icon: Icons.favorite_border,
-                        ),
-                        const SizedBox(height: 20),
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: AppColors.vintageIvory.withOpacity(0.5),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: AppColors.bronzeBorder.withOpacity(0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          const SizedBox(height: 24),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
-                              Text(
-                                'Giới tính:',
-                                style: TextStyle(
-                                  fontFamily: 'serif',
-                                  fontSize: 15,
-                                  color: AppColors.mutedText,
-                                  fontWeight: FontWeight.w600,
+                              Expanded(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: AppColors.vintageIvory,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: AppColors.bronzeBorder,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    style: TextButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Hủy',
+                                      style: TextStyle(
+                                        fontFamily: 'serif',
+                                        color: AppColors.darkBrown,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 16),
-                              Radio<bool>(
-                                value: true,
-                                groupValue: isMale,
-                                onChanged:
-                                    (val) => setState(() => isMale = val!),
-                                activeColor: AppColors.deepGreen,
-                              ),
-                              Text(
-                                'Nam',
-                                style: TextStyle(
-                                  fontFamily: 'serif',
-                                  fontSize: 15,
-                                  color: AppColors.darkBrown,
-                                ),
-                              ),
-                              const SizedBox(width: 20),
-                              Radio<bool>(
-                                value: false,
-                                groupValue: isMale,
-                                onChanged:
-                                    (val) => setState(() => isMale = val!),
-                                activeColor: AppColors.dustyRose,
-                              ),
-                              Text(
-                                'Nữ',
-                                style: TextStyle(
-                                  fontFamily: 'serif',
-                                  fontSize: 15,
-                                  color: AppColors.darkBrown,
+                              Expanded(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        AppColors.sepiaTone,
+                                        AppColors.bronzeBorder,
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: TextButton(
+                                    onPressed: () {
+                                      final spouses =
+                                          spousesController.text
+                                              .split(',')
+                                              .map((e) => e.trim())
+                                              .where((e) => e.isNotEmpty)
+                                              .toList();
+
+                                      final updatedMember = member.copyWith(
+                                        name: nameController.text,
+                                        role: roleController.text,
+                                        birthDate: birthDateController.text,
+                                        isMale: ref.read(
+                                          _editDialogGenderProvider,
+                                        ),
+                                        order:
+                                            int.tryParse(
+                                              orderController.text,
+                                            ) ??
+                                            1,
+                                        spouses: spouses,
+                                      );
+
+                                      ref
+                                          .read(familyTreeProvider.notifier)
+                                          .updateMember(updatedMember);
+                                      Navigator.pop(context);
+                                    },
+                                    style: TextButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Lưu',
+                                      style: TextStyle(
+                                        fontFamily: 'serif',
+                                        color: AppColors.creamPaper,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                        const SizedBox(height: 24),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            Expanded(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: AppColors.vintageIvory,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: AppColors.bronzeBorder,
-                                    width: 2,
-                                  ),
-                                ),
-                                child: TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  style: TextButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 12,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    'Hủy',
-                                    style: TextStyle(
-                                      fontFamily: 'serif',
-                                      color: AppColors.darkBrown,
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      AppColors.sepiaTone,
-                                      AppColors.bronzeBorder,
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: TextButton(
-                                  onPressed: () {
-                                    final spouses =
-                                        spousesController.text
-                                            .split(',')
-                                            .map((e) => e.trim())
-                                            .where((e) => e.isNotEmpty)
-                                            .toList();
-
-                                    final updatedMember = member.copyWith(
-                                      name: nameController.text,
-                                      role: roleController.text,
-                                      birthDate: birthDateController.text,
-                                      isMale: isMale,
-                                      order:
-                                          int.tryParse(orderController.text) ??
-                                          1,
-                                      spouses: spouses,
-                                    );
-
-                                    ref
-                                        .read(familyTreeProvider.notifier)
-                                        .updateMember(updatedMember);
-                                    Navigator.pop(context);
-                                  },
-                                  style: TextButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 12,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    'Lưu',
-                                    style: TextStyle(
-                                      fontFamily: 'serif',
-                                      color: AppColors.creamPaper,
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -1512,6 +1515,10 @@ class _FamilyTreePageState extends ConsumerState<FamilyTreePage>
       builder:
           (context) => Dialog(
             backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 24,
+            ),
             child: Container(
               constraints: const BoxConstraints(maxWidth: 450),
               decoration: BoxDecoration(
@@ -1642,15 +1649,17 @@ class _FamilyTreePageState extends ConsumerState<FamilyTreePage>
     final orderController = TextEditingController(
       text: (parent.children.length + 1).toString(),
     );
-    bool isMale = true;
-
     showDialog(
       context: context,
       builder:
-          (context) => StatefulBuilder(
-            builder: (context, setState) {
+          (context) => Consumer(
+            builder: (context, ref, child) {
               return Dialog(
                 backgroundColor: Colors.transparent,
+                insetPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 24,
+                ),
                 child: Container(
                   constraints: const BoxConstraints(maxWidth: 550),
                   decoration: BoxDecoration(
@@ -1755,9 +1764,17 @@ class _FamilyTreePageState extends ConsumerState<FamilyTreePage>
                               const SizedBox(width: 16),
                               Radio<bool>(
                                 value: true,
-                                groupValue: isMale,
+                                groupValue: ref.watch(
+                                  _addChildDialogGenderProvider,
+                                ),
                                 onChanged:
-                                    (val) => setState(() => isMale = val!),
+                                    (val) =>
+                                        ref
+                                            .read(
+                                              _addChildDialogGenderProvider
+                                                  .notifier,
+                                            )
+                                            .state = val!,
                                 activeColor: AppColors.deepGreen,
                               ),
                               Text(
@@ -1771,9 +1788,17 @@ class _FamilyTreePageState extends ConsumerState<FamilyTreePage>
                               const SizedBox(width: 20),
                               Radio<bool>(
                                 value: false,
-                                groupValue: isMale,
+                                groupValue: ref.watch(
+                                  _addChildDialogGenderProvider,
+                                ),
                                 onChanged:
-                                    (val) => setState(() => isMale = val!),
+                                    (val) =>
+                                        ref
+                                            .read(
+                                              _addChildDialogGenderProvider
+                                                  .notifier,
+                                            )
+                                            .state = val!,
                                 activeColor: AppColors.dustyRose,
                               ),
                               Text(
@@ -1843,7 +1868,9 @@ class _FamilyTreePageState extends ConsumerState<FamilyTreePage>
                                         name: nameController.text,
                                         role: roleController.text,
                                         birthDate: birthDateController.text,
-                                        isMale: isMale,
+                                        isMale: ref.read(
+                                          _addChildDialogGenderProvider,
+                                        ),
                                         order:
                                             int.tryParse(
                                               orderController.text,
@@ -1897,134 +1924,147 @@ class _FamilyTreePageState extends ConsumerState<FamilyTreePage>
       builder:
           (context) => Dialog(
             backgroundColor: Colors.transparent,
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 500),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [AppColors.creamPaper, AppColors.warmBeige],
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 24,
+            ),
+            child: SingleChildScrollView(
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 500),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.creamPaper, AppColors.warmBeige],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.goldBorder, width: 3),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.goldBorder, width: 3),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.favorite_border,
-                    size: 48,
-                    color: AppColors.dustyRose,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'THÊM VỢ/CHỒNG',
-                    style: TextStyle(
-                      fontFamily: 'serif',
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.darkBrown,
-                      letterSpacing: 2,
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.favorite_border,
+                      size: 48,
+                      color: AppColors.dustyRose,
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    height: 2,
-                    width: 100,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.transparent,
-                          AppColors.goldBorder,
-                          Colors.transparent,
-                        ],
+                    const SizedBox(height: 16),
+                    Text(
+                      'THÊM VỢ/CHỒNG',
+                      style: TextStyle(
+                        fontFamily: 'serif',
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.darkBrown,
+                        letterSpacing: 2,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  _buildVintageTextField(
-                    controller: nameController,
-                    label: 'Họ và tên',
-                    icon: Icons.person_outline,
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: AppColors.vintageIvory,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: AppColors.bronzeBorder,
-                              width: 2,
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 2,
+                      width: 100,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.transparent,
+                            AppColors.goldBorder,
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    _buildVintageTextField(
+                      controller: nameController,
+                      label: 'Họ và tên',
+                      icon: Icons.person_outline,
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Expanded(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.vintageIvory,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: AppColors.bronzeBorder,
+                                width: 2,
+                              ),
                             ),
-                          ),
-                          child: TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                            child: Text(
-                              'Hủy',
-                              style: TextStyle(
-                                fontFamily: 'serif',
-                                color: AppColors.darkBrown,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
+                            child: TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                              ),
+                              child: Text(
+                                'Hủy',
+                                style: TextStyle(
+                                  fontFamily: 'serif',
+                                  color: AppColors.darkBrown,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                AppColors.sepiaTone,
-                                AppColors.bronzeBorder,
-                              ],
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppColors.sepiaTone,
+                                  AppColors.bronzeBorder,
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: TextButton(
-                            onPressed: () {
-                              if (nameController.text.isNotEmpty) {
-                                ref
-                                    .read(familyTreeProvider.notifier)
-                                    .addSpouse(member.id, nameController.text);
-                                Navigator.pop(context);
-                              }
-                            },
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                            child: Text(
-                              'Thêm',
-                              style: TextStyle(
-                                fontFamily: 'serif',
-                                color: AppColors.creamPaper,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
+                            child: TextButton(
+                              onPressed: () {
+                                if (nameController.text.isNotEmpty) {
+                                  ref
+                                      .read(familyTreeProvider.notifier)
+                                      .addSpouse(
+                                        member.id,
+                                        nameController.text,
+                                      );
+                                  Navigator.pop(context);
+                                }
+                              },
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                              ),
+                              child: Text(
+                                'Thêm',
+                                style: TextStyle(
+                                  fontFamily: 'serif',
+                                  color: AppColors.creamPaper,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

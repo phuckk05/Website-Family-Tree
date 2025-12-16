@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:website_gia_pha/core/size/flatform.dart';
 import 'package:website_gia_pha/providers/login_provider.dart';
 import 'package:website_gia_pha/providers/notification_provider.dart';
 import 'package:website_gia_pha/themes/app_colors.dart';
@@ -49,8 +50,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final isLoading = loginState.isLoading;
     final errorMessage =
         loginState.hasError ? loginState.error.toString() : null;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 600;
+    final platform = ref.watch(flatformNotifierProvider);
+    final isMobile = platform == 1;
 
     return Scaffold(
       body: SingleChildScrollView(
@@ -71,7 +72,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           ),
           child: Center(
             child: Padding(
-              padding: EdgeInsets.all(isMobile ? 20 : 40),
+              padding: EdgeInsets.all(isMobile ? 10 : 40),
               child: Container(
                 constraints: BoxConstraints(
                   maxWidth: isMobile ? double.infinity : 480,

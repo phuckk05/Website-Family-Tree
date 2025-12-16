@@ -4,6 +4,7 @@ import 'package:website_gia_pha/core/router/custom_router.dart';
 import 'package:website_gia_pha/core/size/flatform.dart';
 import 'package:website_gia_pha/pages/index.dart';
 import 'package:website_gia_pha/pages/login_page.dart';
+import 'package:website_gia_pha/pages/setting_page.dart';
 import 'package:website_gia_pha/providers/auth_provider.dart';
 import 'package:website_gia_pha/providers/notification_provider.dart';
 import 'package:website_gia_pha/themes/app_colors.dart';
@@ -137,6 +138,7 @@ class _CustomHeaderState extends ConsumerState<CustomHeader> {
 
   /// Xây dựng menu desktop với hiệu ứng hover
   List<Widget> _buildDesktopMenu() {
+    final authState = ref.watch(authProvider);
     return [
       _buildMenuItem('Trang chủ', Icons.home, () {
         CustomRouter.pushAndRemoveUntil(const HomePage());
@@ -150,6 +152,22 @@ class _CustomHeaderState extends ConsumerState<CustomHeader> {
       _buildMenuItem('Liên hệ', Icons.contact_mail, () {
         CustomRouter.push(const ContactPage());
       }),
+      authState.when(
+        data: (isLoggedIn) {
+          if (isLoggedIn) {
+            return _buildMenuItem('Cài đặt', Icons.settings, () {
+              CustomRouter.push(const SettingPage());
+            });
+          }
+          return SizedBox();
+        },
+        error: (error, stackTrace) {
+          return SizedBox();
+        },
+        loading: () {
+          return const SizedBox();
+        },
+      ),
       const SizedBox(width: 16),
       _buildLoginButton(),
     ];
@@ -320,10 +338,10 @@ class _CustomHeaderState extends ConsumerState<CustomHeader> {
             CustomRouter.push(const ContactPage());
             break;
           case 'Đăng nhập':
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const LoginPage()),
-            );
+            CustomRouter.push(const LoginPage());
+            break;
+          case 'Cài đặt':
+            CustomRouter.push(const SettingPage());
             break;
           case 'Đăng xuất':
             ref.read(authProvider.notifier).logout();
@@ -334,12 +352,17 @@ class _CustomHeaderState extends ConsumerState<CustomHeader> {
         }
       },
       itemBuilder: (BuildContext context) {
+        final authState = ref.watch(authProvider);
         final isLoggedIn = ref.watch(authProvider).value ?? false;
         return [
           _buildPopupMenuItem('Trang chủ', Icons.home),
           _buildPopupMenuItem('Gia phả', Icons.account_tree),
           _buildPopupMenuItem('Hình ảnh', Icons.photo_library),
           _buildPopupMenuItem('Liên hệ', Icons.contact_mail),
+          _buildPopupMenuItem(
+            isLoggedIn ? 'Cài đặt' : null,
+            isLoggedIn ? Icons.settings : null,
+          ),
           const PopupMenuDivider(),
           _buildPopupMenuItem(
             isLoggedIn ? 'Đăng xuất' : 'Đăng nhập',
@@ -351,7 +374,7 @@ class _CustomHeaderState extends ConsumerState<CustomHeader> {
   }
 
   /// Xây dựng popup menu item với style vintage
-  PopupMenuItem<String> _buildPopupMenuItem(String title, IconData icon) {
+  PopupMenuItem<String> _buildPopupMenuItem(String? title, IconData? icon) {
     return PopupMenuItem<String>(
       value: title,
       child: Container(
@@ -368,7 +391,7 @@ class _CustomHeaderState extends ConsumerState<CustomHeader> {
             ),
             const SizedBox(width: 12),
             Text(
-              title,
+              title ?? 'unknown',
               style: const TextStyle(
                 color: AppColors.woodBrown,
                 fontWeight: FontWeight.w500,
@@ -381,18 +404,5 @@ class _CustomHeaderState extends ConsumerState<CustomHeader> {
         ),
       ),
     );
-  }
-}
-
-// Legacy code removed - replaced with new vintage design above
-class _LegacyCode {
-  void _legacyBuildMethods() {
-    // Old methods kept for reference only
-    // Visibility(
-    //   visible: ref.watch(flatformNotifierProvider) != 3,
-    //   maintainState: true,
-    //   maintainAnimation: true,
-    //   maintainSize: false,
-    //   child: PopupMenuButton<String>(
   }
 }
