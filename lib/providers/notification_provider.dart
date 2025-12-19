@@ -20,7 +20,8 @@ class NotificationNotifier extends StateNotifier<NotificationState?> {
   NotificationNotifier() : super(null);
 
   void show(
-    String message, {
+    String message,
+    NotificationType error, {
     NotificationType type = NotificationType.info,
     Duration duration = const Duration(seconds: 3),
   }) {

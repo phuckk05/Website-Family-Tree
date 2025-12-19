@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:website_gia_pha/pages/loading_page.dart';
 import 'package:website_gia_pha/themes/app_colors.dart';
 import 'package:website_gia_pha/widgets/custom_header.dart';
 import 'package:website_gia_pha/widgets/custom_footer.dart';
 import 'package:website_gia_pha/widgets/top_notification.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:website_gia_pha/providers/loading_provider.dart';
 
-class MainLayout extends StatelessWidget {
+class MainLayout extends ConsumerWidget {
   final Widget child;
   final bool enableScroll;
   final int index;
@@ -17,7 +20,8 @@ class MainLayout extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final loadingState = ref.watch(loadingNotifierProvider);
     return Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: AppColors.ivoryWhite,
@@ -47,6 +51,10 @@ class MainLayout extends StatelessWidget {
             ],
           ),
           const TopNotification(),
+          //Kiểm tra  nếu đang loading thì hiển thị LoadingPage
+          
+          if (loadingState.isLoading)
+          const LoadingPage(),
         ],
       ),
     );

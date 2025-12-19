@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:website_gia_pha/core/router/custom_router.dart';
 import 'package:website_gia_pha/core/size/flatform.dart';
 import 'package:website_gia_pha/providers/login_provider.dart';
 import 'package:website_gia_pha/providers/notification_provider.dart';
@@ -10,7 +12,8 @@ import 'package:website_gia_pha/themes/app_colors.dart';
 /// Trang đăng nhập an toàn cho quản trị viên gia phả
 /// với thiết kế ấm áp, trang trọng như sổ gia phả cổ
 class LoginPage extends ConsumerStatefulWidget {
-  const LoginPage({super.key});
+  final bool isAdminMode;
+  const LoginPage({super.key, this.isAdminMode = false});
 
   @override
   ConsumerState<LoginPage> createState() => _LoginPageState();
@@ -30,10 +33,20 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         .login(username, password);
 
     if (success && mounted) {
-      Navigator.pop(context); // Return to previous screen (Family Tree)
       ref
           .read(notificationProvider.notifier)
-          .show('Đăng nhập thành công!', type: NotificationType.success);
+          .show('Đăng nhập thành công!', NotificationType.success);
+      try {
+        if (widget.isAdminMode) {
+          debugPrint('Đăng nhập thành công, chuyển hướng đến Admin Dashboard');
+          context.go('/');
+        } else {
+          debugPrint('Đăng nhập thành công, chuyển hướng đến trang Settings');
+          AppRouter.go(context, AppRouter.settings);
+        }
+      } catch (e) {
+        debugPrint('Lỗi chuyển hướng sau đăng nhập: $e');
+      }
     }
   }
 
@@ -53,45 +66,53 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final platform = ref.watch(flatformNotifierProvider);
     final isMobile = platform == 1;
 
-    return Scaffold(
-      body: SingleChildScrollView(
-        child: Container(
-          constraints: BoxConstraints(
-            minHeight: MediaQuery.of(context).size.height,
-          ),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppColors.warmBeige,
-                AppColors.creamPaper,
-                AppColors.warmBeige.withOpacity(0.8),
-              ],
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (!didPop) {
+          AppRouter.go(context, AppRouter.home);
+        }
+      },
+      child: Scaffold(
+        resizeToAvoidBottomInset: false,
+        body: SingleChildScrollView(
+          child: Container(
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height,
             ),
-          ),
-          child: Center(
-            child: Padding(
-              padding: EdgeInsets.all(isMobile ? 10 : 40),
-              child: Container(
-                constraints: BoxConstraints(
-                  maxWidth: isMobile ? double.infinity : 480,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Header với logo và tiêu đề
-                    _buildHeader(),
-                    const SizedBox(height: 40),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.warmBeige,
+                  AppColors.creamPaper,
+                  AppColors.warmBeige.withOpacity(0.8),
+                ],
+              ),
+            ),
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.all(isMobile ? 10 : 40),
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxWidth: isMobile ? double.infinity : 480,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Header với logo và tiêu đề
+                      if (!widget.isAdminMode) _buildHeader(),
+                      if (!widget.isAdminMode) const SizedBox(height: 40),
+                      // Card đăng nhập chính
+                      _buildLoginCard(isLoading, errorMessage, isMobile),
 
-                    // Card đăng nhập chính
-                    _buildLoginCard(isLoading, errorMessage, isMobile),
+                      const SizedBox(height: 24),
 
-                    const SizedBox(height: 24),
-
-                    // Nút quay lại
-                    _buildBackButton(),
-                  ],
+                      // Nút quay lại
+                      if (!widget.isAdminMode) _buildBackButton(),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -106,27 +127,32 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     return Column(
       children: [
         // Logo temple
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppColors.primaryGold.withOpacity(0.15),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: AppColors.primaryGold.withOpacity(0.4),
-              width: 3,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.softShadow,
-                blurRadius: 12,
-                offset: const Offset(0, 4),
+        InkWell(
+          onTap: () {
+            AppRouter.go(context, AppRouter.home);
+          },
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.primaryGold.withOpacity(0.15),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.primaryGold.withOpacity(0.4),
+                width: 3,
               ),
-            ],
-          ),
-          child: const Icon(
-            Icons.temple_buddhist,
-            color: AppColors.primaryGold,
-            size: 56,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.softShadow,
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.temple_buddhist,
+              color: AppColors.primaryGold,
+              size: 56,
+            ),
           ),
         ),
         const SizedBox(height: 20),
@@ -239,7 +265,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Dành cho quản trị viên',
+                  widget.isAdminMode
+                      ? 'Chế độ Quản Trị Viên'
+                      : 'Đăng nhập để quản lý gia phả',
                   style: TextStyle(
                     color: AppColors.woodBrown.withOpacity(0.7),
                     fontSize: 13,
@@ -468,7 +496,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Widget _buildBackButton() {
     return TextButton.icon(
       onPressed: () {
-        Navigator.pop(context);
+        AppRouter.go(context, AppRouter.home);
       },
       icon: Icon(
         Icons.arrow_back,

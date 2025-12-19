@@ -1,24 +1,61 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:website_gia_pha/models/family_member.dart';
+import 'package:website_gia_pha/providers/clan_provider.dart';
 import 'package:website_gia_pha/services/family_tree_service.dart';
 
-part 'family_tree_provider.g.dart';
-
 @riverpod
-class FamilyTree extends _$FamilyTree {
-  final FamilyTreeService _service = FamilyTreeService();
-
+class FamilyTree extends StreamNotifier<FamilyMember> {
   @override
   Stream<FamilyMember> build() {
-    return _service.getFamilyTreeStream();
+    final familyTreeService = ref.read(familyTreeServiceProvider);
+    //lấy family tree theo clanId
+    final clan = ref.watch(clanNotifierProvider);
+    return clan.when(
+      data: (data) {
+        final clanId = data.first.id;
+        return familyTreeService.getFamilyTreeStreamById(clanId);
+      },
+      error: (error, stackTrace) {
+        //trả về family tree rỗng nếu lỗi
+        return Stream.value(
+          FamilyMember(
+            id: '',
+            name: '',
+            role: '',
+            birthDate: '',
+            isMale: true,
+            spouses: [],
+            children: [],
+          ),
+        );
+      },
+      loading: () {
+        //trả về family tree rỗng nếu đang load
+        return Stream.value(
+          FamilyMember(
+            id: '',
+            name: '',
+            role: '',
+            birthDate: '',
+            isMale: true,
+            spouses: [],
+            children: [],
+          ),
+        );
+      },
+    );
   }
 
-  Future<void> addChild(String parentId, FamilyMember newChild) async {
+  Future<void> addChild(
+    int docId,
+    String parentId,
+    FamilyMember newChild,
+  ) async {
     final currentRoot = state.value;
     if (currentRoot == null) return;
 
     final newRoot = _addChildRecursive(currentRoot, parentId, newChild);
-    await _service.saveFamilyTree(newRoot);
+    await ref.read(familyTreeServiceProvider).saveFamilyTree(docId, newRoot);
   }
 
   FamilyMember _addChildRecursive(
@@ -49,12 +86,12 @@ class FamilyTree extends _$FamilyTree {
     );
   }
 
-  Future<void> addSpouse(String memberId, String spouseName) async {
+  Future<void> addSpouse(int docId, String memberId, String spouseName) async {
     final currentRoot = state.value;
     if (currentRoot == null) return;
 
     final newRoot = _addSpouseRecursive(currentRoot, memberId, spouseName);
-    await _service.saveFamilyTree(newRoot);
+    await ref.read(familyTreeServiceProvider).saveFamilyTree(docId, newRoot);
   }
 
   FamilyMember _addSpouseRecursive(
@@ -74,12 +111,12 @@ class FamilyTree extends _$FamilyTree {
     );
   }
 
-  Future<void> updateMember(FamilyMember updatedMember) async {
+  Future<void> updateMember(int docId, FamilyMember updatedMember) async {
     final currentRoot = state.value;
     if (currentRoot == null) return;
 
     final newRoot = _updateMemberRecursive(currentRoot, updatedMember);
-    await _service.saveFamilyTree(newRoot);
+    await ref.read(familyTreeServiceProvider).saveFamilyTree(docId, newRoot);
   }
 
   FamilyMember _updateMemberRecursive(
@@ -155,7 +192,7 @@ class FamilyTree extends _$FamilyTree {
     return current.copyWith(children: newChildren);
   }
 
-  Future<void> deleteMember(String memberId) async {
+  Future<void> deleteMember(int docId, String memberId) async {
     final currentRoot = state.value;
     if (currentRoot == null) return;
 
@@ -165,7 +202,7 @@ class FamilyTree extends _$FamilyTree {
     }
 
     final newRoot = _deleteMemberRecursive(currentRoot, memberId);
-    await _service.saveFamilyTree(newRoot);
+    await ref.read(familyTreeServiceProvider).saveFamilyTree(docId, newRoot);
   }
 
   FamilyMember _deleteMemberRecursive(FamilyMember current, String targetId) {
@@ -178,3 +215,7 @@ class FamilyTree extends _$FamilyTree {
     return current.copyWith(children: updatedChildren);
   }
 }
+
+final familyTreeProvider = StreamNotifierProvider<FamilyTree, FamilyMember>(
+  FamilyTree.new,
+);

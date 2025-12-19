@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:website_gia_pha/core/size/flatform.dart';
 import 'package:website_gia_pha/models/family_member.dart';
+import 'package:website_gia_pha/providers/clan_provider.dart';
 import 'package:website_gia_pha/providers/family_tree_provider.dart';
 import 'package:website_gia_pha/providers/notification_provider.dart';
 import 'package:website_gia_pha/providers/auth_provider.dart';
@@ -49,6 +50,8 @@ class _FamilyTreePageState extends ConsumerState<FamilyTreePage>
 
   /// Flag để kiểm tra đã focus vào root node lần đầu chưa
   bool _hasInitialFocused = false;
+
+  //Lấy id clan hiện tại để update
 
   @override
   void initState() {
@@ -215,14 +218,14 @@ class _FamilyTreePageState extends ConsumerState<FamilyTreePage>
               .read(notificationProvider.notifier)
               .show(
                 'Đã tìm thấy thành viên "$value"',
-                type: NotificationType.success,
+                NotificationType.success,
               );
         } else {
           ref
               .read(notificationProvider.notifier)
               .show(
                 'Không tìm thấy thành viên "$value"!',
-                type: NotificationType.error,
+                NotificationType.error,
               );
         }
       }
@@ -313,7 +316,7 @@ class _FamilyTreePageState extends ConsumerState<FamilyTreePage>
                               ),
                             ),
                             child: Text(
-                              'Lỗi: ${err.toString()}',
+                              'Lỗi tải phả hệ: $err',
                               style: TextStyle(
                                 color: AppColors.burgundyAccent,
                                 fontFamily: 'serif',
@@ -569,34 +572,34 @@ class _FamilyTreePageState extends ConsumerState<FamilyTreePage>
     );
   }
 
-  Widget _buildZoomButton(
-    IconData icon,
-    VoidCallback onPressed,
-    String tooltip,
-  ) {
-    return Tooltip(
-      message: tooltip,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: AppColors.woodBrown,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 2,
-                offset: const Offset(1, 1),
-              ),
-            ],
-          ),
-          child: Icon(icon, color: AppColors.ivoryWhite, size: 20),
-        ),
-      ),
-    );
-  }
+  // Widget _buildZoomButton(
+  //   IconData icon,
+  //   VoidCallback onPressed,
+  //   String tooltip,
+  // ) {
+  //   return Tooltip(
+  //     message: tooltip,
+  //     child: InkWell(
+  //       onTap: onPressed,
+  //       borderRadius: BorderRadius.circular(20),
+  //       child: Container(
+  //         padding: const EdgeInsets.all(8),
+  //         decoration: BoxDecoration(
+  //           shape: BoxShape.circle,
+  //           color: AppColors.woodBrown,
+  //           boxShadow: [
+  //             BoxShadow(
+  //               color: Colors.black.withOpacity(0.2),
+  //               blurRadius: 2,
+  //               offset: const Offset(1, 1),
+  //             ),
+  //           ],
+  //         ),
+  //         child: Icon(icon, color: AppColors.ivoryWhite, size: 20),
+  //       ),
+  //     ),
+  //   );
+  // }
 
   /// Xây dựng cây gia phả từ một thành viên (recursive)
   ///
@@ -1469,10 +1472,33 @@ class _FamilyTreePageState extends ConsumerState<FamilyTreePage>
                                             1,
                                         spouses: spouses,
                                       );
+                                      //lấy clan hiện tại
+                                      final clan = ref.watch(
+                                        clanNotifierProvider,
+                                      );
 
-                                      ref
-                                          .read(familyTreeProvider.notifier)
-                                          .updateMember(updatedMember);
+                                      clan.when(
+                                        data: (data) {
+                                          ref
+                                              .read(familyTreeProvider.notifier)
+                                              .updateMember(
+                                                data.first.id,
+                                                updatedMember,
+                                              );
+                                        },
+                                        error: (error, stackTrace) {
+                                          ref
+                                              .read(
+                                                notificationProvider.notifier,
+                                              )
+                                              .show(
+                                                'Lỗi khi cập nhật thành viên.',
+                                                NotificationType.error,
+                                              );
+                                        },
+                                        loading: () {},
+                                      );
+
                                       Navigator.pop(context);
                                     },
                                     style: TextButton.styleFrom(
@@ -1608,9 +1634,26 @@ class _FamilyTreePageState extends ConsumerState<FamilyTreePage>
                           ),
                           child: TextButton(
                             onPressed: () {
-                              ref
-                                  .read(familyTreeProvider.notifier)
-                                  .deleteMember(member.id);
+                              //lấy clan hiện tại
+                              final clan = ref.watch(clanNotifierProvider);
+
+                              clan.when(
+                                data: (data) {
+                                  ref
+                                      .read(familyTreeProvider.notifier)
+                                      .deleteMember(data.first.id, member.id);
+                                },
+                                error: (error, stackTrace) {
+                                  ref
+                                      .read(notificationProvider.notifier)
+                                      .show(
+                                        'Lỗi khi cập nhật thành viên.',
+                                        NotificationType.error,
+                                      );
+                                },
+                                loading: () {},
+                              );
+
                               Navigator.pop(context);
                             },
                             style: TextButton.styleFrom(
@@ -1877,9 +1920,26 @@ class _FamilyTreePageState extends ConsumerState<FamilyTreePage>
                                             ) ??
                                             1,
                                       );
-                                      ref
-                                          .read(familyTreeProvider.notifier)
-                                          .addChild(parent.id, newChild);
+                                      //lấy clan hiện tại
+                                      final clan = ref.watch(
+                                        clanNotifierProvider,
+                                      );
+                                      clan.when(
+                                        data:
+                                            (data) => ref
+                                                .read(
+                                                  familyTreeProvider.notifier,
+                                                )
+                                                .addChild(
+                                                  data.first.id,
+                                                  parent.id,
+                                                  newChild,
+                                                ),
+                                        error:
+                                            (error, stackTrace) =>
+                                                debugPrint(error.toString()),
+                                        loading: () {},
+                                      );
                                       Navigator.pop(context);
                                     }
                                   },
@@ -2035,12 +2095,23 @@ class _FamilyTreePageState extends ConsumerState<FamilyTreePage>
                             child: TextButton(
                               onPressed: () {
                                 if (nameController.text.isNotEmpty) {
-                                  ref
-                                      .read(familyTreeProvider.notifier)
-                                      .addSpouse(
-                                        member.id,
-                                        nameController.text,
-                                      );
+                                  //lấy clan hiện tại
+                                  final clan = ref.watch(clanNotifierProvider);
+                                  clan.when(
+                                    data:
+                                        (data) => ref
+                                            .read(familyTreeProvider.notifier)
+                                            .addSpouse(
+                                              data.first.id,
+                                              member.id,
+                                              nameController.text,
+                                            ),
+                                    error:
+                                        (error, stackTrace) =>
+                                            debugPrint(error.toString()),
+                                    loading: () {},
+                                  );
+
                                   Navigator.pop(context);
                                 }
                               },

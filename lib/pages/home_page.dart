@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:website_gia_pha/core/router/custom_router.dart';
 import 'package:website_gia_pha/core/size/flatform.dart';
-import 'package:website_gia_pha/pages/family_tree_page.dart';
 import 'package:website_gia_pha/themes/app_colors.dart';
 import 'package:website_gia_pha/widgets/main_layout.dart';
 
@@ -218,7 +217,7 @@ class _HomePageState extends ConsumerState<HomePage>
                     _buildVintageButton(
                       text: 'Khám Phá Gia Phả',
                       onPressed: () {
-                        CustomRouter.push(const FamilyTreePage());
+                        AppRouter.go(context, AppRouter.familyTree);
                       },
                     ),
                   ],
@@ -406,7 +405,7 @@ class _HomePageState extends ConsumerState<HomePage>
               _buildVintageButton(
                 text: 'Xem Cây Gia Phả Đầy Đủ',
                 onPressed: () {
-                  CustomRouter.push(const FamilyTreePage());
+                  AppRouter.go(context, AppRouter.familyTree);
                 },
               ),
             ],

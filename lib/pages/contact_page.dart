@@ -55,7 +55,7 @@ class _ContactPageState extends ConsumerState<ContactPage> {
             .read(notificationProvider.notifier)
             .show(
               'Đã gửi yêu cầu thành công! Ban quản trị sẽ liên hệ sớm nhất.',
-              type: NotificationType.success,
+              NotificationType.success,
             );
         // Reset form sau khi gửi thành công
         _nameController.clear();
@@ -68,7 +68,7 @@ class _ContactPageState extends ConsumerState<ContactPage> {
       if (mounted) {
         ref
             .read(notificationProvider.notifier)
-            .show('Gửi thất bại $e', type: NotificationType.error);
+            .show('Gửi thất bại $e', NotificationType.error);
       }
     } finally {
       if (mounted) {

@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:website_gia_pha/core/router/custom_router.dart';
 import 'package:website_gia_pha/core/size/flatform.dart';
-import 'package:website_gia_pha/pages/index.dart';
-import 'package:website_gia_pha/pages/login_page.dart';
-import 'package:website_gia_pha/pages/setting_page.dart';
 import 'package:website_gia_pha/providers/auth_provider.dart';
+import 'package:website_gia_pha/providers/clan_provider.dart';
 import 'package:website_gia_pha/providers/notification_provider.dart';
 import 'package:website_gia_pha/themes/app_colors.dart';
 
@@ -68,7 +66,7 @@ class _CustomHeaderState extends ConsumerState<CustomHeader> {
   /// Xây dựng logo chùa với hiệu ứng vintage
   Widget _buildLogo() {
     return InkWell(
-      onTap: () => CustomRouter.pushAndRemoveUntil(const HomePage()),
+      onTap: () => AppRouter.go(context, AppRouter.home),
       borderRadius: BorderRadius.circular(8),
       child: Container(
         padding: const EdgeInsets.all(8),
@@ -91,14 +89,55 @@ class _CustomHeaderState extends ConsumerState<CustomHeader> {
 
   /// Xây dựng tiêu đề họ với typography vintage
   Widget _buildTitle() {
+    final clan = ref.watch(clanNotifierProvider);
     return InkWell(
-      onTap: () => CustomRouter.pushAndRemoveUntil(const HomePage()),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'HỌ NGUYỄN ĐÌNH',
+      onTap: () => AppRouter.go(context, AppRouter.home),
+      child: clan.when(
+        data: (data) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                data.first.name,
+                style: TextStyle(
+                  color: AppColors.primaryGold,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                  letterSpacing: 2,
+                  fontFamily: 'Serif',
+                  shadows: [
+                    Shadow(
+                      color: Colors.black.withOpacity(0.3),
+                      offset: const Offset(1, 1),
+                      blurRadius: 2,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 2),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryGold.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  data.first.chi,
+                  style: TextStyle(
+                    color: AppColors.creamPaper,
+                    fontSize: 12,
+                    letterSpacing: 1.5,
+                    fontFamily: 'Serif',
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+        error: (error, stackTrace) {
+          return Text(
+            'unknown',
             style: TextStyle(
               color: AppColors.primaryGold,
               fontWeight: FontWeight.bold,
@@ -113,25 +152,11 @@ class _CustomHeaderState extends ConsumerState<CustomHeader> {
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 2),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: AppColors.primaryGold.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: const Text(
-              'CHI 5',
-              style: TextStyle(
-                color: AppColors.creamPaper,
-                fontSize: 12,
-                letterSpacing: 1.5,
-                fontFamily: 'Serif',
-              ),
-            ),
-          ),
-        ],
+          );
+        },
+        loading: () {
+          return const CircularProgressIndicator();
+        },
       ),
     );
   }
@@ -141,22 +166,22 @@ class _CustomHeaderState extends ConsumerState<CustomHeader> {
     final authState = ref.watch(authProvider);
     return [
       _buildMenuItem('Trang chủ', Icons.home, () {
-        CustomRouter.pushAndRemoveUntil(const HomePage());
+        AppRouter.go(context, AppRouter.home);
       }),
       _buildMenuItem('Gia phả', Icons.account_tree, () {
-        CustomRouter.push(const FamilyTreePage());
+        AppRouter.go(context, AppRouter.familyTree);
       }),
       _buildMenuItem('Hình ảnh', Icons.photo_library, () {
-        CustomRouter.push(const GalleryPage());
+        AppRouter.go(context, AppRouter.gallery);
       }),
       _buildMenuItem('Liên hệ', Icons.contact_mail, () {
-        CustomRouter.push(const ContactPage());
+        AppRouter.go(context, AppRouter.contact);
       }),
       authState.when(
         data: (isLoggedIn) {
           if (isLoggedIn) {
             return _buildMenuItem('Cài đặt', Icons.settings, () {
-              CustomRouter.push(const SettingPage());
+              AppRouter.go(context, AppRouter.settings);
             });
           }
           return SizedBox();
@@ -239,12 +264,9 @@ class _CustomHeaderState extends ConsumerState<CustomHeader> {
                   ref.read(authProvider.notifier).logout();
                   ref
                       .read(notificationProvider.notifier)
-                      .show('Đã đăng xuất', type: NotificationType.info);
+                      .show('Đã đăng xuất', NotificationType.info);
                 } else {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const LoginPage()),
-                  );
+                  AppRouter.go(context, AppRouter.login);
                 }
               },
               style: ElevatedButton.styleFrom(
@@ -326,33 +348,32 @@ class _CustomHeaderState extends ConsumerState<CustomHeader> {
       onSelected: (value) {
         switch (value) {
           case 'Trang chủ':
-            CustomRouter.pushAndRemoveUntil(const HomePage());
+            AppRouter.go(context, AppRouter.home);
             break;
           case 'Gia phả':
-            CustomRouter.push(const FamilyTreePage());
+            AppRouter.go(context, AppRouter.familyTree);
             break;
           case 'Hình ảnh':
-            CustomRouter.push(const GalleryPage());
+            AppRouter.go(context, AppRouter.gallery);
             break;
           case 'Liên hệ':
-            CustomRouter.push(const ContactPage());
+            AppRouter.go(context, AppRouter.contact);
             break;
           case 'Đăng nhập':
-            CustomRouter.push(const LoginPage());
+            AppRouter.go(context, AppRouter.login);
             break;
           case 'Cài đặt':
-            CustomRouter.push(const SettingPage());
+            AppRouter.go(context, AppRouter.settings);
             break;
           case 'Đăng xuất':
             ref.read(authProvider.notifier).logout();
             ref
                 .read(notificationProvider.notifier)
-                .show('Đã đăng xuất', type: NotificationType.info);
+                .show('Đã đăng xuất', NotificationType.info);
             break;
         }
       },
       itemBuilder: (BuildContext context) {
-        final authState = ref.watch(authProvider);
         final isLoggedIn = ref.watch(authProvider).value ?? false;
         return [
           _buildPopupMenuItem('Trang chủ', Icons.home),

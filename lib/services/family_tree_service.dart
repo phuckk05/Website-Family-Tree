@@ -1,38 +1,65 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 import 'package:website_gia_pha/models/family_member.dart';
 
 class FamilyTreeService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String _collection = 'family_tree';
-  final String _docId = 'main_tree';
 
-  Stream<FamilyMember> getFamilyTreeStream() {
-    return _firestore.collection(_collection).doc(_docId).snapshots().map((
-      snapshot,
-    ) {
-      if (snapshot.exists && snapshot.data() != null) {
-        return FamilyMember.fromJson(snapshot.data()!);
-      } else {
-        // Trả về dữ liệu mặc định nếu chưa có
-        return _generateDemoData();
-      }
-    });
+  /// STREAM FAMILY TREE
+  Stream<FamilyMember> getFamilyTreeStreamById(int clanId) {
+    return _firestore
+        .collection(_collection)
+        .doc(clanId.toString())
+        .snapshots()
+        .map((snapshot) {
+          if (snapshot.exists && snapshot.data() != null) {
+            return FamilyMember.fromJson(snapshot.data()!);
+          }
+
+          // default root nếu chưa có
+          return FamilyMember(
+            id: const Uuid().v4(),
+            name: 'Nguyễn Văn Tổ',
+            role: 'Thủy Tổ (Đời 1)',
+            birthDate: '1850 - 1920',
+            isMale: true,
+            spouses: const ['Cụ Bà'],
+            children: const [],
+          );
+        });
   }
 
-  Future<void> saveFamilyTree(FamilyMember root) async {
-    await _firestore.collection(_collection).doc(_docId).set(root.toJson());
+  /// SAVE FAMILY TREE
+
+  Future<void> saveFamilyTree(int clanId, FamilyMember root) async {
+    try {
+      await _firestore
+          .collection(_collection)
+          .doc(clanId.toString())
+          .set(root.toJson());
+    } catch (e) {
+      debugPrint(' saveFamilyTree error: $e');
+      rethrow;
+    }
   }
 
-  // Hàm tạo dữ liệu giả 5 thế hệ (để khởi tạo nếu chưa có DB)
-  FamilyMember _generateDemoData() {
+  /// GENERATE DEFAULT ROOT
+  FamilyMember generateDefaultRoot() {
     return FamilyMember(
-      id: '1',
+      id: const Uuid().v4(),
       name: 'Nguyễn Văn Tổ',
       role: 'Thủy Tổ (Đời 1)',
       birthDate: '1850 - 1920',
       isMale: true,
-      spouses: ['Cụ Bà'],
-      children: [],
+      spouses: const ['Cụ Bà'],
+      children: const [],
     );
   }
 }
+
+final familyTreeServiceProvider = Provider<FamilyTreeService>(
+  (ref) => FamilyTreeService(),
+);

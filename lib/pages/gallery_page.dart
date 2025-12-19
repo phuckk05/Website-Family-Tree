@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:website_gia_pha/core/router/custom_router.dart';
 import 'package:website_gia_pha/core/size/flatform.dart';
 import 'package:website_gia_pha/models/album.dart';
 import 'package:website_gia_pha/providers/album_provider.dart';
@@ -66,84 +67,98 @@ class _GalleryPageState extends ConsumerState<GalleryPage>
               // Vintage Header
               _buildVintageHeader(),
 
-              // Gallery Grid
-              StreamBuilder<Set<dynamic>>(
-                stream: ref.watch(albumNotifierProvider.notifier).getAlbums(),
-                builder: (context, snapshot) {
-                  final Set<dynamic> _albums = snapshot.data ?? {};
-
+              // Gallery Grid - Watch state trực tiếp
+              Consumer(
+                builder: (context, ref, child) {
                   final platform = ref.watch(flatformNotifierProvider);
                   final isMobile = platform == 1;
 
-                  // Loading state
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Padding(
-                      padding: EdgeInsets.all(isMobile ? 10 : 32),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.deepGreen,
-                        ),
-                      ),
-                    );
-                  }
-
-                  // Error state
-                  if (snapshot.hasError) {
-                    return Padding(
-                      padding: EdgeInsets.all(isMobile ? 10 : 32),
-                      child: Center(
-                        child: Text(
-                          'Có lỗi khi tải album',
-                          style: TextStyle(
-                            fontFamily: 'serif',
-                            color: AppColors.mutedText,
-                          ),
-                        ),
-                      ),
-                    );
-                  }
-
                   // No data state
-                  final albums = snapshot.data?.toList() ?? [];
-                  if (albums.isEmpty) {
-                    return Padding(
-                      padding: EdgeInsets.all(isMobile ? 10 : 32),
-                      child: Center(
-                        child: Text(
-                          'Chưa có album nào',
-                          style: TextStyle(
-                            fontFamily: 'serif',
-                            color: AppColors.mutedText,
+                  // if (albums.isEmpty) {
+                  //   return Padding(
+                  //     padding: EdgeInsets.all(isMobile ? 10 : 32),
+                  //     child: Center(
+                  //       child: Text(
+                  //         'Chưa có album nào',
+                  //         style: TextStyle(
+                  //           fontFamily: 'serif',
+                  //           color: AppColors.mutedText,
+                  //         ),
+                  //       ),
+                  //     ),
+                  //   );
+                  // }
+                  final albums = ref.watch(albumNotifierProvider);
+
+                  return albums.when(
+                    loading:
+                        () => Padding(
+                          padding: EdgeInsets.all(isMobile ? 10 : 32),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                AppColors.deepGreen,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  }
-
-                  // Data state
-                  return Padding(
-                    padding: EdgeInsets.all(isMobile ? 10 : 32),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 1200),
-                        child: GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: _getCrossAxisCount(context),
-                                childAspectRatio: 0.85,
-                                crossAxisSpacing: 24,
-                                mainAxisSpacing: 24,
+                    error:
+                        (error, stack) => Padding(
+                          padding: EdgeInsets.all(isMobile ? 10 : 32),
+                          child: Center(
+                            child: Text(
+                              'Lỗi tải album: $error',
+                              style: TextStyle(
+                                fontFamily: 'serif',
+                                color: AppColors.mutedText,
                               ),
-                          itemCount: albums.length,
-                          itemBuilder: (context, index) {
-                            final album = albums[index] as Album;
-                            return _buildAlbumCard(album, index);
-                          },
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
+                    data: (albums) {
+                      if (albums.isEmpty) {
+                        return Padding(
+                          padding: EdgeInsets.all(isMobile ? 10 : 32),
+                          child: Center(
+                            child: Text(
+                              'Chưa có album nào',
+                              style: TextStyle(
+                                fontFamily: 'serif',
+                                color: AppColors.mutedText,
+                              ),
+                            ),
+                          ),
+                        );
+                      } else {
+                        return Padding(
+                          padding: EdgeInsets.all(isMobile ? 10 : 32),
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 1200),
+                              child: GridView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: _getCrossAxisCount(
+                                        context,
+                                      ),
+                                      childAspectRatio: 0.85,
+                                      crossAxisSpacing: 24,
+                                      mainAxisSpacing: 24,
+                                    ),
+                                itemCount: albums.length,
+                                itemBuilder: (context, index) {
+                                  // ignore: unnecessary_cast
+                                  final album = albums[index] as Album;
+                                  return _buildAlbumCard(album, index);
+                                },
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+                    },
                   );
                 },
               ),
@@ -414,47 +429,60 @@ class _GalleryPageState extends ConsumerState<GalleryPage>
 
                           // View button
                           Center(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    AppColors.sepiaTone,
-                                    AppColors.bronzeBorder,
+                            child: InkWell(
+                              onTap: () {
+                                // Navigate với album ID trong URL
+                                AppRouter.goNamed(
+                                  context,
+                                  'gallery-detail',
+                                  pathParameters: {
+                                    'albumId': album.id.toString(),
+                                  },
+                                  extra: album,
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AppColors.sepiaTone,
+                                      AppColors.bronzeBorder,
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(8),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.softShadow,
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
                                   ],
                                 ),
-                                borderRadius: BorderRadius.circular(8),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.softShadow,
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    'Xem Album',
-                                    style: TextStyle(
-                                      fontFamily: 'serif',
-                                      color: AppColors.creamPaper,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      letterSpacing: 0.5,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'Xem Album',
+                                      style: TextStyle(
+                                        fontFamily: 'serif',
+                                        color: AppColors.creamPaper,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.5,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Icon(
-                                    Icons.arrow_forward,
-                                    size: 16,
-                                    color: AppColors.creamPaper,
-                                  ),
-                                ],
+                                    const SizedBox(width: 8),
+                                    Icon(
+                                      Icons.arrow_forward,
+                                      size: 16,
+                                      color: AppColors.creamPaper,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:website_gia_pha/core/size/flatform.dart';
 import 'package:website_gia_pha/providers/notification_provider.dart';
-import 'package:website_gia_pha/themes/app_colors.dart';
 
 class TopNotification extends ConsumerStatefulWidget {
   const TopNotification({super.key});
@@ -70,6 +69,7 @@ class _TopNotificationState extends ConsumerState<TopNotification>
         icon = Icons.warning;
         break;
       case NotificationType.info:
+      // ignore: unreachable_switch_default
       default:
         backgroundColor = const Color(0xFF1565C0); // Blue
         icon = Icons.info;

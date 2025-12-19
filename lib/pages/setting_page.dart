@@ -1,14 +1,40 @@
+import 'dart:typed_data';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dotted_border/dotted_border.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:website_gia_pha/APIs/cloudinary_api.dart';
+import 'package:website_gia_pha/core/router/custom_router.dart';
 import 'package:website_gia_pha/core/size/flatform.dart';
 import 'package:website_gia_pha/models/album.dart';
 import 'package:website_gia_pha/providers/album_provider.dart';
+import 'package:website_gia_pha/providers/auth_provider.dart';
+import 'package:website_gia_pha/providers/clan_id_provider.dart';
+import 'package:website_gia_pha/providers/clan_provider.dart';
+import 'package:website_gia_pha/providers/loading_provider.dart';
 import 'package:website_gia_pha/providers/notification_provider.dart';
 import 'package:website_gia_pha/themes/app_colors.dart';
 import 'package:website_gia_pha/widgets/main_layout.dart';
 
+import 'package:website_gia_pha/utils/file_picker_stub.dart'
+    if (dart.library.html) 'package:website_gia_pha/utils/web_file_picker.dart';
+
 // StateProvider cho menu được chọn
 final _selectedMenuProvider = StateProvider.autoDispose<int>((ref) => 0);
+
+// StateProvider cho hover upload area
+final _isHoverUploadProvider = StateProvider.autoDispose<bool>((ref) => false);
+
+// StateProvider cho danh sách ảnh đã chọn
+final _selectedImagesProvider = StateProvider.autoDispose<List<dynamic>>(
+  (ref) => [],
+);
+
+final _isFocus = StateProvider.autoDispose<bool>((ref) => false);
+//StateProvider albums đã được chọn
+// final _selectedAlbumProvider = StateProvider<Album?>((ref) => null);
 
 enum ActionAlbum { add, edit, delete }
 
@@ -59,13 +85,210 @@ class _SettingPageState extends ConsumerState<SettingPage> {
       'description': 'Cấu hình hệ thống',
     },
   ];
+  // Controllers cho form thêm/sửa album
+  late TextEditingController tileController;
+  late TextEditingController descriptionController;
+  late TextEditingController yearController;
+  //Image picker
+  final ImagePicker _imagePicker = ImagePicker();
+  final CloudinaryApi _cloudinaryApi = CloudinaryApi();
+  //Các hàm lấy ảnh từ thiết bị
+  Future<void> pickImages() async {
+    try {
+      if (kIsWeb) {
+        // Web: Dùng file_picker
+        await _pickImagesWeb();
+      } else {
+        // Mobile/Desktop: Dùng image_picker
+        await _pickImagesMobile();
+      }
+    } catch (e) {
+      if (mounted) {
+        ref
+            .read(notificationProvider.notifier)
+            .show('Lỗi khi chọn ảnh: $e', NotificationType.error);
+      }
+    }
+  }
 
-  TextEditingController tileController = TextEditingController();
-  TextEditingController descriptionController = TextEditingController();
-  TextEditingController yearController = TextEditingController();
+  /// Pick ảnh trên Web (file_picker)
+  Future<void> _pickImagesWeb() async {
+    try {
+      await Future.delayed(const Duration(milliseconds: 100));
+      final picked = await pickImagesWeb();
+
+      if (picked != null && picked.isNotEmpty) {
+        // Lưu danh sách file (PlatformFile có bytes cho web)
+        ref.read(_selectedImagesProvider.notifier).state = picked;
+
+        if (mounted) {
+          ref
+              .read(notificationProvider.notifier)
+              .show('Đã chọn ${picked.length} ảnh', NotificationType.success);
+        }
+      }
+    } catch (e) {
+      debugPrint('Lỗi khi chọn ảnh trên web: $e');
+      if (mounted) {
+        ref
+            .read(notificationProvider.notifier)
+            .show('Lỗi khi chọn ảnh web: $e', NotificationType.error);
+      }
+    }
+  }
+
+  /// Pick ảnh trên Mobile/Desktop (image_picker)
+  Future<void> _pickImagesMobile() async {
+    try {
+      await Future.delayed(const Duration(milliseconds: 100));
+      final List<XFile> images = await _imagePicker.pickMultiImage(
+        imageQuality: 85, // Nén ảnh 85% chất lượng
+      );
+
+      if (images.isNotEmpty) {
+        // Lưu danh sách XFile
+        ref.read(_selectedImagesProvider.notifier).state = images;
+
+        if (mounted) {
+          ref
+              .read(notificationProvider.notifier)
+              .show('Đã chọn ${images.length} ảnh', NotificationType.success);
+        }
+      }
+    } catch (e) {
+      debugPrint('Lỗi khi chọn ảnh trên mobile/desktop: $e');
+      if (mounted) {
+        ref
+            .read(notificationProvider.notifier)
+            .show('Lỗi khi chọn ảnh mobile: $e', NotificationType.error);
+      }
+    }
+  }
+
+  /// Pick ảnh từ camera (chỉ mobile)
+  Future<void> pickImageFromCamera() async {
+    if (kIsWeb) {
+      ref
+          .read(notificationProvider.notifier)
+          .show('Camera không khả dụng trên web', NotificationType.error);
+      return;
+    }
+
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        // Thêm ảnh vào danh sách
+        final currentImages = ref.read(_selectedImagesProvider);
+        ref.read(_selectedImagesProvider.notifier).state = [
+          ...currentImages,
+          image,
+        ];
+
+        if (mounted) {
+          ref
+              .read(notificationProvider.notifier)
+              .show('Đã chụp ảnh thành công', NotificationType.success);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ref
+            .read(notificationProvider.notifier)
+            .show('Lỗi khi chụp ảnh: $e', NotificationType.error);
+      }
+    }
+  }
+
+  /// Xóa ảnh đã chọn
+  void removeSelectedImage(int index) {
+    final currentImages = ref.read(_selectedImagesProvider);
+    final newImages = List.from(currentImages)..removeAt(index);
+    ref.read(_selectedImagesProvider.notifier).state = newImages;
+  }
+
+  /// Clear tất cả ảnh đã chọn
+  void clearSelectedImages() {
+    ref.read(_selectedImagesProvider.notifier).state = [];
+  }
+
+  //Xử lý chuyển ảnh về rul
+  void _uploadSelectedImages(int albumId) async {
+    final selectedImages = ref.read(_selectedImagesProvider);
+    if (selectedImages.isEmpty) {
+      ref
+          .read(notificationProvider.notifier)
+          .show('Chưa có ảnh nào được chọn', NotificationType.error);
+      return;
+    }
+    ref.read(loadingNotifierProvider.notifier).show('Đang upload ảnh...');
+    try {
+      // ignore: unused_local_variable
+      List<String> uploadedUrls = [];
+      if (kIsWeb) {
+        // Web: Upload từ bytes
+        List<Uint8List> imageBytesList =
+            selectedImages.map<Uint8List>((file) => file.bytes!).toList();
+        List<String> fileNames =
+            selectedImages.map<String>((file) => file.name).toList();
+
+        uploadedUrls = await _cloudinaryApi.uploadMultipleImagesFromBytes(
+          imageBytesList,
+          fileNames,
+          folder: 'family_album',
+        );
+      } else {
+        // Mobile/Desktop: Upload từ file paths
+        List<String> filePaths =
+            selectedImages.map<String>((file) => file.path).toList();
+
+        uploadedUrls = await _cloudinaryApi.uploadMultipleImagesFromPath(
+          filePaths,
+          folder: 'family_album',
+        );
+      }
+      //lấy clanId
+      final clanId = ref.read(clanIdProvider);
+      //ghi vào firebase album photos
+      final success = await ref
+          .read(albumNotifierProvider.notifier)
+          .addPhotoToAlbum(clanId, uploadedUrls, albumId);
+      // kiểm tra và thông báo
+      if (success) {
+        ref.read(loadingNotifierProvider.notifier).hide();
+        clearSelectedImages();
+        ref
+            .read(notificationProvider.notifier)
+            .show('Đã upload ảnh thành công', NotificationType.success);
+      }
+    } catch (e) {
+      ref.read(loadingNotifierProvider.notifier).hide();
+      ref
+          .read(notificationProvider.notifier)
+          .show('Lỗi khi upload ảnh !', NotificationType.error);
+      debugPrint('Lỗi khi upload ảnh: $e');
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    // Khởi tạo controllers mới mỗi lần page được tạo
+    tileController = TextEditingController();
+    descriptionController = TextEditingController();
+    yearController = TextEditingController();
+
+    // Reset menu và images về trạng thái ban đầu
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(_selectedMenuProvider.notifier).state = 0;
+        ref.read(_selectedImagesProvider.notifier).state = [];
+        ref.read(_isHoverUploadProvider.notifier).state = false;
+      }
+    });
   }
 
   @override
@@ -73,6 +296,7 @@ class _SettingPageState extends ConsumerState<SettingPage> {
     tileController.dispose();
     descriptionController.dispose();
     yearController.dispose();
+
     super.dispose();
   }
 
@@ -81,7 +305,33 @@ class _SettingPageState extends ConsumerState<SettingPage> {
     final platform = ref.watch(flatformNotifierProvider);
     final isMobile = platform == 1;
     final selectedIndex = ref.watch(_selectedMenuProvider);
+    final authState = ref.watch(authProvider);
 
+    // Show loading while checking auth
+    return authState.when(
+      loading:
+          () =>
+              const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error:
+          (error, stack) =>
+              MainLayout(index: 7, child: Center(child: Text('Error: $error'))),
+      data: (isLoggedIn) {
+        // Redirect if not logged in
+        if (!isLoggedIn) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              AppRouter.go(context, AppRouter.login);
+            }
+          });
+          return const Scaffold(body: SizedBox.shrink());
+        }
+
+        return _buildMainContent(isMobile, selectedIndex);
+      },
+    );
+  }
+
+  Widget _buildMainContent(bool isMobile, int selectedIndex) {
     return MainLayout(
       index: 7,
       child: Container(
@@ -503,66 +753,49 @@ class _SettingPageState extends ConsumerState<SettingPage> {
           ),
         ),
         const SizedBox(height: 12),
-        // Hiển thị danh sách album từ StreamBuilder
-        StreamBuilder<Set<dynamic>>(
-          stream: ref.watch(albumNotifierProvider.notifier).getAlbums(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: CircularProgressIndicator(color: AppColors.deepGreen),
-                ),
-              );
-            }
+        // Hiển thị danh sách album - watch state trực tiếp
+        Consumer(
+          builder: (context, ref, child) {
+            final albums = ref.watch(albumNotifierProvider);
 
-            if (snapshot.hasError) {
-              return Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.vintageIvory.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: AppColors.bronzeBorder.withOpacity(0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Text(
-                  'Có lỗi khi tải danh sách album',
+            // if (albums.isEmpty) {
+            //   return Container(
+            //     padding: const EdgeInsets.all(16),
+            //     decoration: BoxDecoration(
+            //       color: AppColors.vintageIvory.withOpacity(0.3),
+            //       borderRadius: BorderRadius.circular(8),
+            //       border: Border.all(
+            //         color: AppColors.bronzeBorder.withOpacity(0.3),
+            //         width: 1,
+            //       ),
+            //     ),
+            //     child: Text(
+            //       'Chưa có album nào. Nhấn "Tạo Album Mới" để thêm.',
+            //       style: TextStyle(
+            //         fontFamily: 'serif',
+            //         fontSize: 14,
+            //         color: AppColors.mutedText,
+            //         fontStyle: FontStyle.italic,
+            //       ),
+            //     ),
+            //   );
+            // }
+            return albums.when(
+              data: (data) {
+                return _buildAlbumList(data);
+              },
+              error: (error, stackTrace) {
+                return Text(
+                  'Lỗi khi tải album: $error',
                   style: TextStyle(
                     fontFamily: 'serif',
                     fontSize: 14,
-                    color: AppColors.mutedText,
+                    color: AppColors.goldBorder,
                   ),
-                ),
-              );
-            }
-
-            final albums = snapshot.data?.toList() ?? [];
-            if (albums.isEmpty) {
-              return Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.vintageIvory.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: AppColors.bronzeBorder.withOpacity(0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Text(
-                  'Chưa có album nào. Nhấn "Tạo Album Mới" để thêm.',
-                  style: TextStyle(
-                    fontFamily: 'serif',
-                    fontSize: 14,
-                    color: AppColors.mutedText,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              );
-            }
-
-            return _buildAlbumList(albums);
+                );
+              },
+              loading: () => Center(child: CircularProgressIndicator()),
+            );
           },
         ),
       ],
@@ -570,7 +803,7 @@ class _SettingPageState extends ConsumerState<SettingPage> {
   }
 
   /// Xây dựng danh sách album
-  Widget _buildAlbumList(List<dynamic> albums) {
+  Widget _buildAlbumList(List<Album> albums) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.vintageIvory.withOpacity(0.3),
@@ -669,47 +902,237 @@ class _SettingPageState extends ConsumerState<SettingPage> {
               'Upload ảnh mới vào các album đã có. Hỗ trợ nhiều định dạng: JPG, PNG, GIF.',
         ),
         const SizedBox(height: 24),
-        Container(
-          height: 200,
-          decoration: BoxDecoration(
-            color: AppColors.vintageIvory.withOpacity(0.3),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppColors.bronzeBorder,
-              width: 2,
-              style: BorderStyle.solid,
-            ),
-          ),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.cloud_upload_outlined,
-                  size: 64,
-                  color: AppColors.mutedText,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Kéo thả ảnh vào đây hoặc nhấn để chọn',
-                  style: TextStyle(
-                    fontFamily: 'serif',
-                    fontSize: 14,
-                    color: AppColors.mutedText,
-                    fontStyle: FontStyle.italic,
+        Consumer(
+          builder: (context, ref, child) {
+            final isHover = ref.watch(_isHoverUploadProvider);
+            return MouseRegion(
+              onEnter:
+                  (_) => ref.read(_isHoverUploadProvider.notifier).state = true,
+              onExit:
+                  (_) =>
+                      ref.read(_isHoverUploadProvider.notifier).state = false,
+              cursor: SystemMouseCursors.click,
+              child: InkWell(
+                onTap: () {
+                  clearSelectedImages();
+                  pickImages();
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: DottedBorder(
+                  color: isHover ? AppColors.deepGreen : AppColors.bronzeBorder,
+                  strokeWidth: 2,
+                  dashPattern: const [8, 4],
+                  borderType: BorderType.RRect,
+                  radius: const Radius.circular(12),
+                  child: Container(
+                    height: 200,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color:
+                          isHover
+                              ? AppColors.deepGreen.withOpacity(0.05)
+                              : AppColors.vintageIvory.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.cloud_upload_outlined,
+                            size: 64,
+                            color:
+                                isHover
+                                    ? AppColors.deepGreen
+                                    : AppColors.mutedText,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Kéo thả ảnh vào đây hoặc nhấn để chọn',
+                            style: TextStyle(
+                              fontFamily: 'serif',
+                              fontSize: 14,
+                              color:
+                                  isHover
+                                      ? AppColors.deepGreen
+                                      : AppColors.mutedText,
+                              fontStyle: FontStyle.italic,
+                              fontWeight:
+                                  isHover ? FontWeight.w600 : FontWeight.normal,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         ),
+        const SizedBox(height: 16),
+
+        // Nút chụp ảnh (chỉ mobile)
+        if (!kIsWeb)
+          _buildActionButton(
+            icon: Icons.camera_alt_outlined,
+            label: 'Chụp Ảnh',
+            onPressed: pickImageFromCamera,
+          ),
+
         const SizedBox(height: 24),
+
+        // Hiển thị preview ảnh đã chọn
+        Consumer(
+          builder: (context, ref, child) {
+            final selectedImages = ref.watch(_selectedImagesProvider);
+
+            if (selectedImages.isEmpty) {
+              return const SizedBox.shrink();
+            }
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Đã chọn ${selectedImages.length} ảnh:',
+                      style: TextStyle(
+                        fontFamily: 'serif',
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.darkBrown,
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: clearSelectedImages,
+                      icon: Icon(Icons.clear_all, color: AppColors.mutedText),
+                      label: Text(
+                        'Xóa tất cả',
+                        style: TextStyle(
+                          fontFamily: 'serif',
+                          color: AppColors.mutedText,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _buildImagePreviewGrid(selectedImages),
+                const SizedBox(height: 24),
+              ],
+            );
+          },
+        ),
+
         _buildActionButton(
           icon: Icons.photo_library_outlined,
           label: 'Chọn Album Đích',
-          onPressed: () {
-            // TODO: Implement
+          onPressed: () async {
+            final selectedImages = ref.read(_selectedImagesProvider);
+            if (selectedImages.isEmpty) {
+              ref
+                  .read(notificationProvider.notifier)
+                  .show('Vui lòng chọn ảnh trước!', NotificationType.error);
+              return;
+            }
+            // Hiển thị dialog chọn album đích
+            _showChooseAlbumDialog();
           },
+        ),
+      ],
+    );
+  }
+
+  /// Xây dựng grid preview ảnh
+  Widget _buildImagePreviewGrid(List<dynamic> images) {
+    return Container(
+      constraints: const BoxConstraints(maxHeight: 300),
+      decoration: BoxDecoration(
+        color: AppColors.vintageIvory.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: AppColors.bronzeBorder.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: GridView.builder(
+        shrinkWrap: true,
+        padding: const EdgeInsets.all(8),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 4,
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 8,
+        ),
+        itemCount: images.length,
+        itemBuilder: (context, index) {
+          final image = images[index];
+          return _buildImagePreviewItem(image, index);
+        },
+      ),
+    );
+  }
+
+  /// Xây dựng item preview ảnh
+  Widget _buildImagePreviewItem(dynamic image, int index) {
+    return Stack(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.creamPaper,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: AppColors.bronzeBorder.withOpacity(0.5),
+              width: 2,
+            ),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child:
+                kIsWeb
+                    ? Image.memory(
+                      image.bytes!,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                    )
+                    : FutureBuilder<Uint8List>(
+                      future: image.readAsBytes(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData) {
+                          return Image.memory(
+                            snapshot.data!,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                          );
+                        }
+                        return Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.deepGreen,
+                            strokeWidth: 2,
+                          ),
+                        );
+                      },
+                    ),
+          ),
+        ),
+        Positioned(
+          top: 4,
+          right: 4,
+          child: InkWell(
+            onTap: () => removeSelectedImage(index),
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.6),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.close, color: Colors.white, size: 16),
+            ),
+          ),
         ),
       ],
     );
@@ -796,6 +1219,8 @@ class _SettingPageState extends ConsumerState<SettingPage> {
 
   /// Demo: Quản lý Bài Viết
   Widget _buildContentManagement() {
+    final platform = ref.watch(flatformNotifierProvider);
+    final isMobile = platform == 1;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -822,33 +1247,49 @@ class _SettingPageState extends ConsumerState<SettingPage> {
           ),
         ),
         const SizedBox(height: 12),
-        StreamBuilder<Set<dynamic>>(
-          stream: ref.watch(albumNotifierProvider.notifier).getAlbums(),
-          builder: (context, snapshot) {
-            final Set<dynamic> albums = snapshot.data ?? {};
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.hasError) {
-              return Text('Lỗi tải danh sách album: ${snapshot.error}');
-            }
-
-            if (albums.isEmpty) {
-              return Text(
-                'Chưa có bài viết nào.',
-                style: TextStyle(
-                  fontFamily: 'serif',
-                  fontSize: 14,
-                  color: AppColors.mutedText,
-                  fontStyle: FontStyle.italic,
-                ),
-              );
-            }
-            return Column(
-              children:
-                  albums
-                      .map<Widget>((e) => _buildDemoList(e.title.toString()))
-                      .toList(),
+        Consumer(
+          builder: (context, ref, child) {
+            final albums = ref.watch(albumNotifierProvider);
+            return albums.when(
+              data: (data) {
+                if (data.isEmpty) {
+                  return Padding(
+                    padding: EdgeInsets.all(isMobile ? 10 : 32),
+                    child: Center(
+                      child: Text(
+                        'Chưa có album nào',
+                        style: TextStyle(
+                          fontFamily: 'serif',
+                          color: AppColors.mutedText,
+                        ),
+                      ),
+                    ),
+                  );
+                } else {
+                  return Column(
+                    children:
+                        data
+                            .map<Widget>(
+                              (e) => _buildDemoList(e.title.toString()),
+                            )
+                            .toList(),
+                  );
+                }
+              },
+              error: (error, stackTrace) {
+                return Center(
+                  child: Text(
+                    'Lỗi tải dữ liệu album: $error',
+                    style: TextStyle(
+                      fontFamily: 'serif',
+                      color: AppColors.darkBrown,
+                    ),
+                  ),
+                );
+              },
+              loading: () {
+                return const Center(child: CircularProgressIndicator());
+              },
             );
           },
         ),
@@ -1028,6 +1469,506 @@ class _SettingPageState extends ConsumerState<SettingPage> {
     );
   }
 
+  void _showChooseAlbumDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (context) => Consumer(
+            builder:
+                (context, ref, child) => Dialog(
+                  backgroundColor: Colors.transparent,
+                  insetPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 24,
+                  ),
+                  child: Container(
+                    constraints: const BoxConstraints(
+                      maxWidth: 500,
+                      maxHeight: 600,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [AppColors.creamPaper, AppColors.warmBeige],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.goldBorder, width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Icon
+                        Icon(
+                          Icons.photo_library_outlined,
+                          size: 48,
+                          color: AppColors.deepGreen,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Title
+                        Text(
+                          'Chọn album đích',
+                          style: TextStyle(
+                            fontFamily: 'serif',
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.darkBrown,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Divider
+                        Container(
+                          height: 2,
+                          width: 100,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.transparent,
+                                AppColors.goldBorder,
+                                Colors.transparent,
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Danh sách album - watch state trực tiếp
+                        Expanded(
+                          child: Consumer(
+                            builder: (context, ref, child) {
+                              final albums = ref.watch(albumNotifierProvider);
+
+                              return albums.when(
+                                data: (data) {
+                                  if (data.isEmpty) {
+                                    return Center(
+                                      child: Text(
+                                        'Chưa có album nào. Vui lòng tạo album trước.',
+                                        style: TextStyle(
+                                          fontFamily: 'serif',
+                                          color: AppColors.mutedText,
+                                        ),
+                                      ),
+                                    );
+                                  } else {
+                                    return Container(
+                                      decoration: BoxDecoration(
+                                        color: AppColors.vintageIvory
+                                            .withOpacity(0.3),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: AppColors.bronzeBorder
+                                              .withOpacity(0.3),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: ListView.separated(
+                                        shrinkWrap: true,
+                                        itemCount: data.length,
+                                        separatorBuilder:
+                                            (context, index) => Divider(
+                                              color: AppColors.bronzeBorder
+                                                  .withOpacity(0.3),
+                                              height: 1,
+                                            ),
+                                        itemBuilder: (context, index) {
+                                          final album = data[index];
+
+                                          return Material(
+                                            color: Colors.transparent,
+                                            child: InkWell(
+                                              onTap: () {
+                                                Navigator.pop(context);
+                                                _showConfirmSaveAlbum(album);
+                                              },
+                                              child: Container(
+                                                padding: const EdgeInsets.all(
+                                                  16,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.transparent,
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    const SizedBox(width: 16),
+                                                    Expanded(
+                                                      child: Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          Text(
+                                                            album.title,
+                                                            style: TextStyle(
+                                                              fontFamily:
+                                                                  'serif',
+                                                              fontSize: 16,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              color:
+                                                                  AppColors
+                                                                      .darkBrown,
+                                                            ),
+                                                          ),
+                                                          const SizedBox(
+                                                            height: 4,
+                                                          ),
+                                                          Text(
+                                                            'Năm: ${album.year}',
+                                                            style: TextStyle(
+                                                              fontFamily:
+                                                                  'serif',
+                                                              fontSize: 12,
+                                                              color:
+                                                                  AppColors
+                                                                      .mutedText,
+                                                              fontStyle:
+                                                                  FontStyle
+                                                                      .italic,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    );
+                                  }
+                                },
+                                error: (error, stackTrace) {
+                                  return Center(
+                                    child: Text(
+                                      'Lỗi tải dữ liệu album: $error',
+                                      style: TextStyle(
+                                        fontFamily: 'serif',
+                                        color: AppColors.primaryGold,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                loading:
+                                    () => const Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                              );
+                            },
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Buttons
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            // Nút Hủy
+                            Expanded(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: AppColors.vintageIvory,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: AppColors.bronzeBorder,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                  },
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Quay Lại',
+                                    style: TextStyle(
+                                      fontFamily: 'serif',
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.mutedText,
+                                      letterSpacing: 1,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+          ),
+    );
+  }
+
+  void _showConfirmSaveAlbum(Album selectedAlbum) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (context) => Consumer(
+            builder:
+                (context, ref, child) => Dialog(
+                  backgroundColor: Colors.transparent,
+                  insetPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 24,
+                  ),
+                  child: Container(
+                    constraints: const BoxConstraints(
+                      maxWidth: 500,
+                      maxHeight: 600,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [AppColors.creamPaper, AppColors.warmBeige],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.goldBorder, width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Icon
+                        Icon(
+                          Icons.photo_library_outlined,
+                          size: 48,
+                          color: AppColors.deepGreen,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Title
+                        Text(
+                          'Xác nhận lưu',
+                          style: TextStyle(
+                            fontFamily: 'serif',
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.darkBrown,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Divider
+                        Container(
+                          height: 2,
+                          width: 100,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.transparent,
+                                AppColors.goldBorder,
+                                Colors.transparent,
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Thông tin album đã chọn
+                        Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.vintageIvory.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: AppColors.bronzeBorder.withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          padding: const EdgeInsets.all(16),
+                          child: Builder(
+                            builder: (context) {
+                              final album = selectedAlbum;
+
+                              // ignore: unnecessary_null_comparison
+                              if (album == null) {
+                                return Text(
+                                  'Không có album được chọn',
+                                  style: TextStyle(
+                                    fontFamily: 'serif',
+                                    fontSize: 14,
+                                    color: AppColors.mutedText,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                );
+                              }
+
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.photo_album,
+                                        size: 20,
+                                        color: AppColors.deepGreen,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Album đích',
+                                        style: TextStyle(
+                                          fontFamily: 'serif',
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.mutedText,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    album.title,
+                                    style: TextStyle(
+                                      fontFamily: 'serif',
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.darkBrown,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Năm: ${album.year}',
+                                    style: TextStyle(
+                                      fontFamily: 'serif',
+                                      fontSize: 14,
+                                      color: AppColors.mutedText,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                  if (album.description.isNotEmpty) ...[
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      album.description,
+                                      style: TextStyle(
+                                        fontFamily: 'serif',
+                                        fontSize: 13,
+                                        color: AppColors.mutedText,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Buttons
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            // Nút Hủy
+                            Expanded(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: AppColors.vintageIvory,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: AppColors.bronzeBorder,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                  },
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Quay Lại',
+                                    style: TextStyle(
+                                      fontFamily: 'serif',
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.mutedText,
+                                      letterSpacing: 1,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: AppColors.vintageIvory,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: AppColors.bronzeBorder,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: TextButton(
+                                  onPressed: () {
+                                    _uploadSelectedImages(selectedAlbum.id);
+                                    Navigator.pop(context);
+                                  },
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'lưu',
+                                    style: TextStyle(
+                                      fontFamily: 'serif',
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.mutedText,
+                                      letterSpacing: 1,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+          ),
+    );
+  }
+
   /// Hiển thị dialog thêm album mới
   void _showAddAlbumDialog(
     int? id,
@@ -1186,133 +2127,132 @@ class _SettingPageState extends ConsumerState<SettingPage> {
                             ),
                             child: TextButton(
                               onPressed: () async {
-                                // Kiểm tra dữ liệu nhập
-                                if (titleController.text.isEmpty ||
-                                    descriptionController.text.isEmpty ||
-                                    yearController.text.isEmpty) {
-                                  // Hiển thị cảnh báo nếu chưa nhập đầy đủ
+                                final isOpen = ref.read(_isFocus);
+                                if (isOpen) return;
+
+                                if (actionAlbum != ActionAlbum.delete &&
+                                    (titleController.text.isEmpty ||
+                                        descriptionController.text.isEmpty ||
+                                        yearController.text.isEmpty)) {
                                   ref
                                       .read(notificationProvider.notifier)
                                       .show(
-                                        'Vui lòng nhập đầy đủ thông tin album trước khi thêm!',
-                                        type: NotificationType.error,
+                                        'Vui lòng nhập đầy đủ thông tin album!',
+                                        NotificationType.error,
                                       );
-                                } else {
+                                  return;
+                                }
+
+                                ref.read(_isFocus.notifier).state = true;
+
+                                try {
                                   switch (actionAlbum) {
                                     case ActionAlbum.add:
-                                      try {
-                                        Album newAlbum = Album.create(
-                                          title: titleController.text,
-                                          description:
-                                              descriptionController.text,
-                                          year: yearController.text,
-                                        );
-                                        await ref
-                                            .read(
-                                              albumNotifierProvider.notifier,
-                                            )
-                                            .addAlbum(newAlbum);
+                                      final newAlbum = Album.create(
+                                        title: titleController.text,
+                                        description: descriptionController.text,
+                                        year: yearController.text,
+                                      );
 
-                                        if (mounted) {
-                                          // Hiển thị thông báo thành công
-                                          ref
-                                              .read(
-                                                notificationProvider.notifier,
-                                              )
-                                              .show(
-                                                'Thêm album thành công!',
-                                                type: NotificationType.success,
-                                              );
-                                          // Đóng dialog
-                                          Navigator.pop(context);
-                                        }
+                                      final clan = ref.watch(
+                                        clanNotifierProvider,
+                                      );
 
-                                        // Xoá dữ liệu trong controller
-                                        titleController.clear();
-                                        descriptionController.clear();
-                                        yearController.clear();
-                                      } catch (e) {
-                                        if (mounted) {
-                                          ref
-                                              .read(
-                                                notificationProvider.notifier,
-                                              )
-                                              .show(
-                                                'Lỗi khi thêm album: $e',
-                                                type: NotificationType.error,
-                                              );
-                                        }
-                                      }
-                                      break;
-                                    case ActionAlbum.edit:
-                                      try {
-                                        Album updatedAlbum = Album(
-                                          id: id!,
-                                          title: titleController.text,
-                                          description:
-                                              descriptionController.text,
-                                          year: yearController.text,
-                                        );
+                                      clan.when(
+                                        data:
+                                            (data) => ref
+                                                .read(
+                                                  albumNotifierProvider
+                                                      .notifier,
+                                                )
+                                                .addAlbum(
+                                                  data.first.id,
+                                                  newAlbum,
+                                                ),
+                                        error:
+                                            (error, stackTrace) => debugPrint(
+                                              'lỗi thêm clan ${error}',
+                                            ),
+                                        loading: () {},
+                                      );
+
+                                      if (mounted) {
                                         ref
-                                            .read(
-                                              albumNotifierProvider.notifier,
-                                            )
-                                            .updateAlbum(updatedAlbum);
-
-                                        if (mounted) {
-                                          // Hiển thị thông báo thành công
-                                          ref
-                                              .read(
-                                                notificationProvider.notifier,
-                                              )
-                                              .show(
-                                                'Cập nhật album thành công!',
-                                                type: NotificationType.success,
-                                              );
-                                          // Đóng dialog
-                                          Navigator.pop(context);
-                                        }
-
-                                        // Xoá dữ liệu trong controller
-                                        titleController.clear();
-                                        descriptionController.clear();
-                                        yearController.clear();
-                                      } catch (e) {
-                                        if (mounted) {
-                                          ref
-                                              .read(
-                                                notificationProvider.notifier,
-                                              )
-                                              .show(
-                                                'Lỗi khi cập nhật album: $e',
-                                                type: NotificationType.error,
-                                              );
-                                        }
+                                            .read(notificationProvider.notifier)
+                                            .show(
+                                              'Thêm album thành công!',
+                                              NotificationType.success,
+                                            );
+                                        Navigator.pop(context);
                                       }
+
+                                      titleController.clear();
+                                      descriptionController.clear();
+                                      yearController.clear();
                                       break;
-                                    case ActionAlbum.delete:
-                                      Album deletedAlbum = Album(
+
+                                    case ActionAlbum.edit:
+                                      final updatedAlbum = Album(
                                         id: id!,
                                         title: titleController.text,
                                         description: descriptionController.text,
                                         year: yearController.text,
                                       );
-                                      ref
+                                      final clanId = ref.watch(clanIdProvider);
+                                      final success = await ref
                                           .read(albumNotifierProvider.notifier)
-                                          .removeAlbum(deletedAlbum);
-                                      if (mounted) {
-                                        // Hiển thị thông báo thành công
+                                          .updateAlbum(clanId, updatedAlbum);
+
+                                      if (success && mounted) {
+                                        ref
+                                            .read(notificationProvider.notifier)
+                                            .show(
+                                              'Cập nhật album thành công!',
+                                              NotificationType.success,
+                                            );
+                                        Navigator.pop(context);
+                                        titleController.clear();
+                                        descriptionController.clear();
+                                        yearController.clear();
+                                      }
+                                      break;
+
+                                    case ActionAlbum.delete:
+                                      final deletedAlbum = Album(
+                                        id: id!,
+                                        title: titleController.text,
+                                        description: descriptionController.text,
+                                        year: yearController.text,
+                                      );
+                                      final clanId = ref.watch(clanIdProvider);
+
+                                      final response = await ref
+                                          .read(albumNotifierProvider.notifier)
+                                          .removeAlbum(clanId, deletedAlbum);
+
+                                      if (response && mounted) {
                                         ref
                                             .read(notificationProvider.notifier)
                                             .show(
                                               'Xóa album thành công!',
-                                              type: NotificationType.success,
+                                              NotificationType.success,
                                             );
-                                        // Đóng dialog
                                         Navigator.pop(context);
                                       }
+
                                       break;
                                   }
+                                } catch (e) {
+                                  if (mounted) {
+                                    ref
+                                        .read(notificationProvider.notifier)
+                                        .show(
+                                          'Có lỗi xảy ra: $e',
+                                          NotificationType.error,
+                                        );
+                                  }
+                                } finally {
+                                  ref.read(_isFocus.notifier).state = false;
                                 }
                               },
                               style: TextButton.styleFrom(
