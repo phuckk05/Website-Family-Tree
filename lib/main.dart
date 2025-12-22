@@ -5,7 +5,9 @@ import 'package:url_strategy/url_strategy.dart';
 import 'package:website_gia_pha/core/router/admin_router.dart';
 import 'package:website_gia_pha/core/router/custom_router.dart';
 import 'package:website_gia_pha/core/size/flatform.dart';
+import 'package:website_gia_pha/pages/loading_page.dart';
 import 'package:website_gia_pha/providers/subdomain_provider.dart';
+import 'package:website_gia_pha/services/clan_service.dart';
 import 'package:website_gia_pha/themes/app_colors.dart';
 import 'firebase_options.dart';
 
@@ -22,6 +24,19 @@ void main() async {
 
 class GiaPhaApp extends ConsumerWidget {
   const GiaPhaApp({super.key});
+
+  Future<bool> checkClanBySubdomain(String subdomain, WidgetRef ref) async {
+    if (subdomain.isEmpty || subdomain == '') return false;
+
+    //kiểm tra subdomain
+    final clanService = ref.read(clanServiceProvider);
+    final clan = await clanService.getClanOnceBySubdomain(subdomain);
+    if (clan != null) {
+      return true;
+    } else {
+      return false;
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -45,84 +60,105 @@ class GiaPhaApp extends ConsumerWidget {
     debugPrint('Main Domain: $mainDomain');
     debugPrint('Full Host: $fullHost');
 
-    //Kiểm tra subdomain để phân luồng giao diện
-    if (hasSubdomain) {
-      if (subdomain == 'admin') {
-        return MaterialApp.router(
-          routerConfig: AppAdminRouter.adminRouter,
-          title: 'Admin',
-          debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: AppColors.primaryGold,
-              // primary: AppColors.primaryGold,
-              secondary: AppColors.woodBrown,
+    return FutureBuilder<bool>(
+      future: checkClanBySubdomain(subdomain ?? '', ref),
+      builder: (context, snapshot) {
+        // loading
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            home: Scaffold(
+              body: LoadingPage(message: 'Đang kiểm tra thông tin dòng họ...'),
             ),
-            useMaterial3: true,
-            scaffoldBackgroundColor: AppColors.ivoryWhite,
-          ),
-          builder: (context, child) {
-            // Update platform state based on screen width
-            final screenWidth = MediaQuery.of(context).size.width;
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              ref
-                  .read(flatformNotifierProvider.notifier)
-                  .updateFlatform(screenWidth);
-            });
-            return child!;
-          },
-        );
-      } else {
-        return MaterialApp.router(
-          routerConfig: AppRouter.router,
-          title: 'Gia Phả Họ Nguyễn Đình - Chi 5',
-          debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: AppColors.primaryGold,
-              // primary: AppColors.primaryGold,
-              secondary: AppColors.woodBrown,
+          );
+        }
+
+        final isCheckingClan = snapshot.data ?? false;
+
+        if (isCheckingClan) {
+          if (subdomain == 'admin') {
+            return MaterialApp.router(
+              routerConfig: AppAdminRouter.adminRouter,
+              title: 'Admin',
+              debugShowCheckedModeBanner: false,
+              theme: ThemeData(
+                colorScheme: ColorScheme.fromSeed(
+                  seedColor: AppColors.primaryGold,
+                  secondary: AppColors.woodBrown,
+                ),
+                useMaterial3: true,
+                scaffoldBackgroundColor: AppColors.ivoryWhite,
+              ),
+              builder: (context, child) {
+                final screenWidth = MediaQuery.of(context).size.width;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  ref
+                      .read(flatformNotifierProvider.notifier)
+                      .updateFlatform(screenWidth);
+                });
+                return child!;
+              },
+            );
+          } else {
+            return MaterialApp.router(
+              routerConfig: AppRouter.router,
+              title: 'Gia phả',
+              debugShowCheckedModeBanner: false,
+              theme: ThemeData(
+                colorScheme: ColorScheme.fromSeed(
+                  seedColor: AppColors.primaryGold,
+                  secondary: AppColors.woodBrown,
+                ),
+                useMaterial3: true,
+                scaffoldBackgroundColor: AppColors.ivoryWhite,
+              ),
+              builder: (context, child) {
+                final screenWidth = MediaQuery.of(context).size.width;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  ref
+                      .read(flatformNotifierProvider.notifier)
+                      .updateFlatform(screenWidth);
+                });
+                return child!;
+              },
+            );
+          }
+        } else {
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            home: Scaffold(
+              body: Center(
+                child: Text(
+                  'hello world!',
+                  style: TextStyle(fontSize: 18, color: AppColors.mutedText),
+                ),
+              ),
             ),
-            useMaterial3: true,
-            scaffoldBackgroundColor: AppColors.ivoryWhite,
-          ),
-          builder: (context, child) {
-            // Update platform state based on screen width
-            final screenWidth = MediaQuery.of(context).size.width;
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              ref
-                  .read(flatformNotifierProvider.notifier)
-                  .updateFlatform(screenWidth);
-            });
-            return child!;
-          },
-        );
-      }
-    } else {
-      return MaterialApp.router(
-        routerConfig: AppRouter.router,
-        title: 'Gia Phả Họ Nguyễn Đình - Chi 5',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: AppColors.primaryGold,
-            // primary: AppColors.primaryGold,
-            secondary: AppColors.woodBrown,
-          ),
-          useMaterial3: true,
-          scaffoldBackgroundColor: AppColors.ivoryWhite,
-        ),
-        builder: (context, child) {
-          // Update platform state based on screen width
-          final screenWidth = MediaQuery.of(context).size.width;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            ref
-                .read(flatformNotifierProvider.notifier)
-                .updateFlatform(screenWidth);
-          });
-          return child!;
-        },
-      );
-    }
+          );
+          // return MaterialApp.router(
+          //   routerConfig: AppRouter.router,
+          //   title: 'Gia phả',
+          //   debugShowCheckedModeBanner: false,
+          //   theme: ThemeData(
+          //     colorScheme: ColorScheme.fromSeed(
+          //       seedColor: AppColors.primaryGold,
+          //       secondary: AppColors.woodBrown,
+          //     ),
+          //     useMaterial3: true,
+          //     scaffoldBackgroundColor: AppColors.ivoryWhite,
+          //   ),
+          //   builder: (context, child) {
+          //     final screenWidth = MediaQuery.of(context).size.width;
+          //     WidgetsBinding.instance.addPostFrameCallback((_) {
+          //       ref
+          //           .read(flatformNotifierProvider.notifier)
+          //           .updateFlatform(screenWidth);
+          //     });
+          //     return child!;
+          //   },
+          // );
+        }
+      },
+    );
   }
 }

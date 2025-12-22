@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:website_gia_pha/core/size/flatform.dart';
+import 'package:website_gia_pha/providers/clan_provider.dart';
 import 'package:website_gia_pha/providers/notification_provider.dart';
 import 'package:website_gia_pha/themes/app_colors.dart';
 import 'package:website_gia_pha/widgets/main_layout.dart';
@@ -235,29 +236,40 @@ class _ContactPageState extends ConsumerState<ContactPage> {
 
   /// Xây dựng các card thông tin liên hệ
   Widget _buildContactInfoCards() {
-    return Column(
-      children: [
-        _buildContactCard(
-          icon: Icons.location_on_outlined,
-          title: 'Địa chỉ nhà thờ',
-          content: 'Xã Bạch Hà, Tỉnh Nghệ An',
-          color: AppColors.deepGreen,
-        ),
-        const SizedBox(height: 16),
-        _buildContactCard(
-          icon: Icons.phone_outlined,
-          title: 'Số điện thoại ban liên lạc',
-          content: '0328262101',
-          color: AppColors.mutedBlue,
-        ),
-        const SizedBox(height: 16),
-        _buildContactCard(
-          icon: Icons.email_outlined,
-          title: 'Email hỗ trợ',
-          content: 'phuckk2101@gmail.com',
-          color: AppColors.burgundyAccent,
-        ),
-      ],
+    final clan = ref.watch(clanNotifierProvider);
+    return clan.when(
+      data: (data) {
+        return Column(
+          children: [
+            _buildContactCard(
+              icon: Icons.location_on_outlined,
+              title: 'Địa chỉ nhà thờ',
+              content: data.first.address ?? '',
+              color: AppColors.deepGreen,
+            ),
+            const SizedBox(height: 16),
+            _buildContactCard(
+              icon: Icons.phone_outlined,
+              title: 'Số điện thoại ban liên lạc',
+              content: data.first.phone ?? '',
+              color: AppColors.mutedBlue,
+            ),
+            const SizedBox(height: 16),
+            _buildContactCard(
+              icon: Icons.email_outlined,
+              title: 'Email hỗ trợ',
+              content: data.first.email ?? '',
+              color: AppColors.burgundyAccent,
+            ),
+          ],
+        );
+      },
+      loading: () {
+        return const Center(child: CircularProgressIndicator());
+      },
+      error: (error, stack) {
+        return const Center(child: CircularProgressIndicator());
+      },
     );
   }
 

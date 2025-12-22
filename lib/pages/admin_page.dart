@@ -1039,7 +1039,7 @@ class AdminPage extends ConsumerWidget {
                                               const SizedBox(width: 6),
                                               Expanded(
                                                 child: Text(
-                                                  '${clan.subNameUrl}.giapha.site',
+                                                  clan.subNameUrl,
                                                   overflow:
                                                       TextOverflow.ellipsis,
                                                   maxLines: 1,
@@ -1385,6 +1385,14 @@ class AdminPage extends ConsumerWidget {
                         name: nameController.text.trim(),
                         chi: chiController.text.trim(),
                         subNameUrl: subdomainController.text.trim(),
+                        address: null,
+                        phone: null,
+                        email: null,
+                        soucreSolgan: null,
+                        soucreUrl: null,
+                        generations: null,
+                        stories: null,
+                        slogan: null,
                       );
                       final success = await ref
                           .read(clanNotifierProvider.notifier)
@@ -1407,16 +1415,24 @@ class AdminPage extends ConsumerWidget {
                       }
                       break;
                     case ClanAction.edit:
-                      Clan updatedClan = Clan(
+                      Clan newClan = Clan(
                         id: clan!.id,
                         name: nameController.text.trim(),
                         chi: chiController.text.trim(),
                         subNameUrl: subdomainController.text.trim(),
+                        address: clan.address,
+                        phone: clan.phone,
+                        email: clan.email,
+                        slogan: clan.slogan,
+                        soucreSolgan: clan.soucreSolgan,
+                        soucreUrl: clan.soucreUrl,
+                        generations: clan.generations,
+                        stories: clan.stories,
                         createdAt: clan.createdAt,
                       );
                       final success = await ref
                           .read(clanNotifierProvider.notifier)
-                          .updateClan(clan.id, updatedClan);
+                          .updateClan(clan.id, newClan);
                       if (success) {
                         Navigator.of(context).pop();
                         ref

@@ -263,6 +263,8 @@ class _GalleryPageState extends ConsumerState<GalleryPage>
 
   /// Xây dựng card album với hiệu ứng hover
   Widget _buildAlbumCard(Album album, int index) {
+    final platform = ref.watch(flatformNotifierProvider);
+    final isMobile = platform == 1;
     return Consumer(
       builder: (context, ref, child) {
         final hoveredIndex = ref.watch(_hoveredIndexProvider);
@@ -339,8 +341,8 @@ class _GalleryPageState extends ConsumerState<GalleryPage>
                                 ),
                               ),
                               child: Icon(
-                                Icons.propane,
-                                size: 48,
+                                Icons.photo_sharp,
+                                size: isMobile ? 24 : 48,
                                 color: AppColors.deepGreen,
                               ),
                             ),

@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:website_gia_pha/providers/clan_provider.dart';
 import 'package:website_gia_pha/themes/app_colors.dart';
 
 /// Footer với phong cách vintage 1990s Vietnamese
 ///
 /// Hiển thị thông tin liên hệ, bản quyền và các liên kết quan trọng
 /// với thiết kế ấm áp, trang trọng như các tài liệu gia phả cổ
-class CustomFooter extends StatefulWidget {
+class CustomFooter extends ConsumerStatefulWidget {
   const CustomFooter({super.key});
 
   @override
-  State<CustomFooter> createState() => _CustomFooterState();
+  ConsumerState<CustomFooter> createState() => _CustomFooterState();
 }
 
-class _CustomFooterState extends State<CustomFooter> {
+class _CustomFooterState extends ConsumerState<CustomFooter> {
   String? _hoveredLink;
 
   @override
@@ -104,6 +106,7 @@ class _CustomFooterState extends State<CustomFooter> {
 
   /// Section: Về Gia Tộc
   Widget _buildAboutSection() {
+    final clan = ref.watch(clanNotifierProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -129,30 +132,36 @@ class _CustomFooterState extends State<CustomFooter> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'HỌ NGUYỄN ĐÌNH',
-                    style: TextStyle(
-                      color: AppColors.primaryGold,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5,
-                      fontFamily: 'Serif',
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'CHI 5',
-                    style: TextStyle(
-                      color: AppColors.creamPaper.withOpacity(0.8),
-                      fontSize: 13,
-                      letterSpacing: 1,
-                      fontFamily: 'Serif',
-                    ),
-                  ),
-                ],
+              child: clan.when(
+                data: (data) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        data.first.name,
+                        style: TextStyle(
+                          color: AppColors.primaryGold,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.5,
+                          fontFamily: 'Serif',
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        data.first.chi,
+                        style: TextStyle(
+                          color: AppColors.creamPaper.withOpacity(0.8),
+                          fontSize: 13,
+                          letterSpacing: 1,
+                          fontFamily: 'Serif',
+                        ),
+                      ),
+                    ],
+                  );
+                },
+                error: (error, stackTrace) => CircularProgressIndicator(),
+                loading: () => CircularProgressIndicator(),
               ),
             ),
           ],
@@ -174,21 +183,28 @@ class _CustomFooterState extends State<CustomFooter> {
 
   /// Section: Liên Hệ
   Widget _buildContactSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionTitle('LIÊN HỆ'),
-        const SizedBox(height: 16),
-        _buildContactItem(
-          Icons.location_on,
-          'Nhà Thờ Họ',
-          'Xã Bạch Hà, Tỉnh Nghệ An',
-        ),
-        const SizedBox(height: 12),
-        _buildContactItem(Icons.phone, 'Điện thoại', '0328262101'),
-        const SizedBox(height: 12),
-        _buildContactItem(Icons.email, 'Email', 'phuckk2101@gmail.com'),
-      ],
+    final clan = ref.watch(clanNotifierProvider);
+    return clan.when(
+      data: (data) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionTitle('LIÊN HỆ'),
+            const SizedBox(height: 16),
+            _buildContactItem(
+              Icons.location_on,
+              'Nhà Thờ Họ',
+              data.first.address!,
+            ),
+            const SizedBox(height: 12),
+            _buildContactItem(Icons.phone, 'Điện thoại', data.first.phone!),
+            const SizedBox(height: 12),
+            _buildContactItem(Icons.email, 'Email', data.first.email!),
+          ],
+        );
+      },
+      error: (error, stackTrace) => CircularProgressIndicator(),
+      loading: () => CircularProgressIndicator(),
     );
   }
 
